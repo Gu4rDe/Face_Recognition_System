@@ -79,3 +79,7 @@ Desktop.ini
 
 # Node modules
 node_modules/
+
+# AI tool configs
+.opencode/
+.qwen/
