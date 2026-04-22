@@ -178,23 +178,25 @@ fun PhotoCaptureDialog(
     )
 }
 
+private fun loadPolicyText(): String {
+    return try {
+        val stream = PolicyTextDialog::class.java.classLoader.getResourceAsStream("policy.md")
+        stream?.bufferedReader()?.use { it.readText() }
+            ?: "Текст политики не найден."
+    } catch (_: Exception) {
+        "Не удалось загрузить текст политики."
+    }
+}
+
 @Composable
 private fun PolicyTextDialog(onDismiss: () -> Unit) {
+    val policyText = remember { loadPolicyText() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Политика использования") },
         text = {
             Column {
-                Text(
-                    "Настоящая Политика использования регулирует порядок сбора, хранения и обработки " +
-                    "фотографических изображений сотрудников в системе распознавания лиц.\n\n" +
-                    "1. Фотографии собираются исключительно в целях идентификации и контроля доступа.\n" +
-                    "2. Изображения хранятся на защищённом сервере и не передаются третьим лицам.\n" +
-                    "3. Сотрудник имеет право на удаление своих данных по запросу.\n" +
-                    "4. Использование фотографий в иных целях без согласия сотрудника запрещено.\n" +
-                    "5. Администрация системы несёт ответственность за сохранность данных.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(policyText, style = MaterialTheme.typography.bodyMedium)
             }
         },
         confirmButton = {
