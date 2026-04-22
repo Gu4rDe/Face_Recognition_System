@@ -54,9 +54,13 @@ compose.desktop {
         mainClass = "com.example.kotlinapp.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.example.kotlinapp"
+            targetFormats( TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "Face Recognition System"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("src/jvmMain/resources/app.ico"))
+            }
         }
     }
 }
