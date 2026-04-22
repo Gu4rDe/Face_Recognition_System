@@ -1,4 +1,4 @@
-# KotlinApp
+# Face Recognition System
 
 Desktop client for the **Miit_FaceDetect** face recognition system. Built with **Compose Multiplatform** (JVM target) and **Material3**, providing a modern UI for admin authentication, employee management, face recognition, and application settings.
 
