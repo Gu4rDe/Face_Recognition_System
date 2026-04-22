@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -178,19 +175,17 @@ fun PhotoCaptureDialog(
     )
 }
 
-private fun loadPolicyText(): String {
-    return try {
-        val stream = PolicyTextDialog::class.java.classLoader.getResourceAsStream("policy.md")
+private object PolicyTextLoader {
+    fun load(): String = runCatching {
+        val stream = PolicyTextLoader::class.java.classLoader.getResourceAsStream("policy.md")
         stream?.bufferedReader()?.use { it.readText() }
             ?: "Текст политики не найден."
-    } catch (_: Exception) {
-        "Не удалось загрузить текст политики."
-    }
+    }.getOrElse { "Не удалось загрузить текст политики." }
 }
 
 @Composable
 private fun PolicyTextDialog(onDismiss: () -> Unit) {
-    val policyText = remember { loadPolicyText() }
+    val policyText = remember { PolicyTextLoader.load() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Политика использования") },
