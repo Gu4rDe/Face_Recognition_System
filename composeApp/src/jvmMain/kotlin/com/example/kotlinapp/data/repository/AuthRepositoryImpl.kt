@@ -5,6 +5,7 @@ import com.example.kotlinapp.data.mapper.toDto
 import com.example.kotlinapp.data.remote.ApiService
 import com.example.kotlinapp.domain.model.Admin
 import com.example.kotlinapp.domain.model.AdminRegister
+import com.example.kotlinapp.domain.model.AdminResetPassword
 import com.example.kotlinapp.domain.model.AuthResult
 import com.example.kotlinapp.domain.repository.AuthRepository
 
@@ -36,6 +37,11 @@ class AuthRepositoryImpl(
 
     override suspend fun getMe(): Admin {
         return apiService.getMe().toDomain()
+    }
+
+    override suspend fun resetPassword(reset: AdminResetPassword): String {
+        val response = apiService.resetPassword(reset.username, reset.inviteCode, reset.newPassword)
+        return response.message
     }
 
     override fun getToken(): String? {

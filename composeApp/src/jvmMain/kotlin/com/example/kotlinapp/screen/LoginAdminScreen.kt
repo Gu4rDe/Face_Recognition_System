@@ -145,6 +145,13 @@ class LoginAdminScreen : Screen {
                 Text(text = "Зарегистрироваться")
             }
 
+            TextButton(
+                onClick = { navigator.push(PasswordRecoveryScreen()) },
+                enabled = !isLoading
+            ) {
+                Text(text = "Забыли пароль?")
+            }
+
             Button(
                 onClick = { navigator.pop() },
                 enabled = !isLoading,

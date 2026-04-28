@@ -3,10 +3,12 @@ package com.example.kotlinapp.data.mapper
 import com.example.kotlinapp.data.dto.AdminResponseDto
 import com.example.kotlinapp.data.dto.LoginRequestDto
 import com.example.kotlinapp.data.dto.RegisterRequestDto
+import com.example.kotlinapp.data.dto.ResetPasswordRequestDto
 import com.example.kotlinapp.data.dto.TokenResponseDto
 import com.example.kotlinapp.domain.model.Admin
 import com.example.kotlinapp.domain.model.AdminLogin
 import com.example.kotlinapp.domain.model.AdminRegister
+import com.example.kotlinapp.domain.model.AdminResetPassword
 import com.example.kotlinapp.domain.model.AuthResult
 
 fun AdminRegister.toDto() = RegisterRequestDto(
@@ -19,6 +21,12 @@ fun AdminRegister.toDto() = RegisterRequestDto(
 fun AdminLogin.toDto() = LoginRequestDto(
     username = username,
     password = password
+)
+
+fun AdminResetPassword.toDto() = ResetPasswordRequestDto(
+    username = username,
+    invite_code = inviteCode,
+    new_password = newPassword
 )
 
 fun TokenResponseDto.toDomain() = AuthResult(

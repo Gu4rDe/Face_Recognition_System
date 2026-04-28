@@ -31,4 +31,10 @@ object FormValidator {
         if (value.isBlank()) return "Введите код приглашения"
         return null
     }
+
+    fun validateConfirmPassword(password: String, confirmPassword: String): String? {
+        if (confirmPassword.isBlank()) return "Подтвердите пароль"
+        if (password != confirmPassword) return "Пароли не совпадают"
+        return null
+    }
 }

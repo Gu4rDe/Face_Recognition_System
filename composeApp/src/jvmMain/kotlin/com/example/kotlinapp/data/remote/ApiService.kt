@@ -74,6 +74,15 @@ class ApiService(val apiClient: ApiClient) {
         }
     }
 
+    suspend fun resetPassword(username: String, inviteCode: String, newPassword: String): ResetPasswordResponseDto {
+        return safeCall {
+            client.post("/api/v1/admins/reset-password") {
+                contentType(ContentType.Application.Json)
+                setBody(ResetPasswordRequestDto(username, inviteCode, newPassword))
+            }.body()
+        }
+    }
+
     // Invite Codes
     suspend fun createInviteCode(expiresHours: Int): InviteCodeResponseDto {
         return safeCall {

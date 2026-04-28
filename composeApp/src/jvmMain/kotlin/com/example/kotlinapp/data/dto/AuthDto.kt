@@ -29,3 +29,15 @@ data class AdminResponseDto(
     val email: String,
     val created_at: String
 )
+
+@Serializable
+data class ResetPasswordRequestDto(
+    val username: String,
+    val invite_code: String,
+    val new_password: String
+)
+
+@Serializable
+data class ResetPasswordResponseDto(
+    val message: String
+)

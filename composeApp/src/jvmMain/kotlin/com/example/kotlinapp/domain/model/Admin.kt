@@ -18,3 +18,9 @@ data class AdminLogin(
     val username: String,
     val password: String
 )
+
+data class AdminResetPassword(
+    val username: String,
+    val inviteCode: String,
+    val newPassword: String
+)

@@ -163,4 +163,43 @@ class ServerCommunicationTest {
         inviteRepo.deleteInviteCode(invite.id)
         println("Deleted invite id=${invite.id}")
     }
+
+    @Test
+    fun testResetPassword() = runBlocking {
+        val testUsername = "test_reset_${System.currentTimeMillis()}"
+        val testEmail = "reset_${System.currentTimeMillis()}@example.com"
+        val testPassword = "Test123456!"
+        val newPassword = "NewPass789!"
+
+        authRepo.login(AdminLogin(USERNAME, PASSWORD))
+        val invite = inviteRepo.createInviteCode(InviteCodeCreate(expiresHours = 24))
+        println("Created invite code for reset: ${invite.code}")
+
+        val newAdmin = authRepo.register(
+            AdminRegister(
+                username = testUsername,
+                email = testEmail,
+                password = testPassword,
+                inviteCode = invite.code
+            )
+        )
+        println("Registered admin for reset test: ${newAdmin.username}")
+
+        val secondInvite = inviteRepo.createInviteCode(InviteCodeCreate(expiresHours = 24))
+        println("Created second invite code for reset: ${secondInvite.code}")
+
+        val resetMessage = authRepo.resetPassword(
+            AdminResetPassword(
+                username = testUsername,
+                inviteCode = secondInvite.code,
+                newPassword = newPassword
+            )
+        )
+        println("Reset password message: $resetMessage")
+        assertNotNull(resetMessage)
+
+        val loginWithNewPassword = authRepo.login(AdminLogin(testUsername, newPassword))
+        println("Login with new password successful: ${loginWithNewPassword.accessToken.take(20)}...")
+        assertNotNull(loginWithNewPassword.accessToken)
+    }
 }
