@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -72,8 +75,8 @@ fun PhotoCaptureDialog(
         while (isStreaming && capturedPhoto == null) {
             val frame = WebcamService.capture()
             if (frame != null) {
-                    preview = frame.toImageBitmapOrNull()
-                }
+                preview = frame.toImageBitmapOrNull()
+            }
             delay(100)
         }
     }
@@ -186,11 +189,18 @@ private object PolicyTextLoader {
 @Composable
 private fun PolicyTextDialog(onDismiss: () -> Unit) {
     val policyText = remember { PolicyTextLoader.load() }
+    val scrollState = rememberScrollState()
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Политика использования") },
         text = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(scrollState)
+            )
+            {
                 Text(policyText, style = MaterialTheme.typography.bodyMedium)
             }
         },
