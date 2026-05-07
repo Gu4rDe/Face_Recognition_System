@@ -1,6 +1,33 @@
 # Face Recognition System
 
-Desktop client for the **Miit_FaceDetect** face recognition system. Built with **Compose Multiplatform** (JVM target) and **Material3**, providing a modern UI for admin authentication, employee management, face recognition, and application settings.
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.10.3-green.svg)](https://github.com/JetBrains/compose-multiplatform)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
+
+Desktop client for the **Miit_FaceDetect** face recognition system. Built with **Compose Multiplatform** and **Material3**, providing a modern UI for admin authentication, employee management, face recognition, and application settings.
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- **Admin Authentication** — login, registration with invite codes, JWT Bearer token management
+- **Employee Management** — CRUD operations, search, photo capture via webcam, employee statistics
+- **Face Recognition** — image upload or webcam capture, real-time bounding box overlay with color-coded confidence levels, match results with employee data enrichment
+- **Settings** — theme switching (light/dark), configurable API base URL, face recognition parameters (match threshold, camera resolution, FPS), persistent storage
+- **Navigation** — Voyager-based screen navigation with composable section switching
 
 ## Tech Stack
 
@@ -10,236 +37,201 @@ Desktop client for the **Miit_FaceDetect** face recognition system. Built with *
 | UI Framework | Compose Multiplatform | 1.10.3 |
 | UI Toolkit | Material3 | 1.10.0-alpha05 |
 | Navigation | Voyager | 1.1.0-beta01 |
-| HTTP Client | Ktor Client (CIO engine) | 3.0.3 |
+| HTTP Client | Ktor Client (CIO) | 3.0.3 |
 | Serialization | kotlinx-serialization-json | 1.7.3 |
 | Coroutines | kotlinx-coroutines-swing | 1.10.2 |
-| Lifecycle | androidx.lifecycle (viewmodel, runtime) | 2.10.0 |
+| Lifecycle | androidx.lifecycle | 2.10.0 |
 | Logging | SLF4J | 2.0.16 |
 | Testing | JUnit | 4.13.2 |
-| Hot Reload | Compose Hot Reload | 1.0.0 |
+| Webcam | webcam-capture | — |
 | Build | Gradle (Kotlin Multiplatform) | — |
-| Desktop Packaging | Compose Desktop (Dmg, Msi, Deb) | — |
 
 ## Architecture
 
 Clean Architecture with three layers and strict dependency rules:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 presentation                      │
-│   UI composables, Screens (Voyager),            │
-│   SettingsState, Theme                           │
-│   depends on → domain                            │
-├─────────────────────────────────────────────────┤
-│                   domain                          │
-│   Business models, repository interfaces         │
-│   no external dependencies                       │
-├─────────────────────────────────────────────────┤
-│                    data                           │
-│   DTOs, mappers, ApiClient, ApiService,         │
-│   LocalSettingsStorage, repository impls         │
-│   depends on → domain                            │
-└─────────────────────────────────────────────────┘
+presentation ──→ domain ←── data
 ```
+
+| Layer | Responsibility |
+|-------|---------------|
+| **presentation** | UI composables, Voyager screens, SettingsState, theming |
+| **domain** | Business models, repository interfaces (no external dependencies) |
+| **data** | DTOs, mappers, ApiClient, ApiService, LocalSettingsStorage, repository implementations |
 
 **Dependency rule:** `presentation → domain ← data`. The domain layer knows nothing about data or presentation.
 
 **Cross-cutting components:**
-- **ServiceLocator** — singleton DI container, creates and provides ApiClient, ApiService, all repositories
+- **ServiceLocator** — singleton DI container for ApiClient, ApiService, and all repositories
 - **util/ErrorMapper** — translates ApiException/NetworkException into user-friendly messages
 
 ## Project Structure
 
 ```
-com.example.kotlinapp
+composeApp/src/jvmMain/kotlin/com/example/kotlinapp
 ├── main.kt                    # Entry point (Window)
 ├── App.kt                     # Root composable
 ├── ServiceLocator.kt          # Singleton DI container
 ├── domain/
 │   ├── model/                  # Business data classes
-│   │   ├── Admin.kt
-│   │   ├── AuthResult.kt
-│   │   ├── Employee.kt
-│   │   ├── FaceRecognitionResult.kt
-│   │   ├── InviteCode.kt
-│   │   └── Settings.kt
 │   └── repository/             # Repository interfaces
-│       ├── AuthRepository.kt
-│       ├── EmployeeRepository.kt
-│       ├── FaceRecognitionRepository.kt
-│       ├── InviteCodeRepository.kt
-│       └── SettingsRepository.kt
 ├── data/
 │   ├── local/                  # Local settings storage
-│   │   └── LocalSettingsStorage.kt
 │   ├── dto/                    # Serializable DTOs for API
-│   │   ├── AuthDto.kt
-│   │   ├── EmployeeDto.kt
-│   │   ├── FaceRecognitionDto.kt
-│   │   ├── InviteCodeDto.kt
-│   │   └── SettingsDto.kt
-│   ├── mapper/                 # DTO ↔ Domain extension functions
-│   │   ├── AuthMappers.kt
-│   │   ├── EmployeeMappers.kt
-│   │   ├── FaceRecognitionMappers.kt
-│   │   ├── InviteCodeMappers.kt
-│   │   └── SettingsMappers.kt
-│   ├── remote/                 # Network layer
-│   │   ├── ApiClient.kt
-│   │   ├── ApiService.kt
-│   │   └── ApiException.kt
+│   ├── mapper/                 # DTO ↔ Domain mappers
+│   ├── remote/                 # Network layer (ApiClient, ApiService)
 │   └── repository/             # Repository implementations
-│       ├── AuthRepositoryImpl.kt
-│       ├── EmployeeRepositoryImpl.kt
-│       ├── FaceRecognitionRepositoryImpl.kt
-│       ├── InviteCodeRepositoryImpl.kt
-│       └── SettingsRepositoryImpl.kt
-├── api/
-│   └── ApiService.kt           # Demo client (dummyjson.com)
 ├── screen/                     # Voyager Screens
-│   ├── HomeScreen.kt
-│   ├── LoginAdminScreen.kt
-│   ├── RegisterAdminScreen.kt
-│   └── AdminStubScreen.kt
-├── presentation/
-│   └── SettingsState.kt
-├── ui/
+├── presentation/               # UI state management
+├── ui/                         # Reusable UI components
 │   ├── buttons/
-│   │   └── LoginButton.kt
 │   ├── textfields/
-│   │   ├── LoginTextField.kt
-│   │   └── PasswordTextField.kt
 │   ├── icons/
-│   │   ├── SettingsIcon.kt
-│   │   └── VisibilityIcon.kt
 │   ├── settings/
-│   │   └── SettingsOverlay.kt
 │   └── theme/
-│       ├── Color.kt
-│       └── Theme.kt
-└── util/
-    └── ErrorMapper.kt
+└── util/                       # Utility classes
 ```
 
-## Features
+## Prerequisites
 
-- **Admin Authentication** — login, registration with invite codes, JWT Bearer token management
-- **Employee Management** — CRUD operations, search, photo capture via webcam, employee statistics
-- **Face Recognition** — image upload or webcam capture, real-time bounding box overlay with color-coded confidence levels, match results with employee data enrichment
-- **Settings** — theme switching (light/dark), configurable API base URL, face recognition parameters (match threshold, camera resolution, FPS), persistent storage via `java.util.prefs.Preferences`
-- **Navigation** — Voyager-based screen navigation with composable section switching (Dashboard, Employees, Face Recognition)
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| JDK | 17+ | Required for JVM target |
+| Gradle | Bundled | Wrapper included (`gradlew` / `gradlew.bat`) |
+| OS | Windows / macOS / Linux | Desktop targets only |
 
-## Conventions
+## Installation
 
-### Naming
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd my-frontend-project
+   ```
 
-| Category | Convention | Example |
-|----------|-----------|---------|
-| Domain models | `camelCase`, plain data classes | `Employee`, `AuthResult` |
-| DTO fields | `snake_case` (matches server JSON) | `employee_id`, `created_at` |
-| Domain fields | `camelCase` | `employeeId`, `createdAt` |
-| DTO classes | `Dto` suffix | `EmployeeResponseDto` |
-| Repository interfaces | `Repository` suffix | `AuthRepository` |
-| Repository implementations | `RepositoryImpl` suffix | `AuthRepositoryImpl` |
-| Mappers | Extension functions `toDto()` / `toDomain()` | `EmployeeResponseDto.toDomain()` |
-| Navigation screens | `Screen` suffix | `HomeScreen`, `LoginAdminScreen` |
-| UI states | `State` suffix | `SettingsState` |
-| Overlays | `Overlay` suffix | `SettingsOverlay` |
+2. **Verify JDK installation**
+   ```bash
+   java -version
+   ```
+   Ensure JDK 17 or higher is installed and `JAVA_HOME` is set.
 
-### Serialization
+3. **Build the project**
+   ```bash
+   ./gradlew build
+   ```
+   On Windows, use `gradlew.bat build`.
 
-- JSON via `kotlinx-serialization`
-- Configuration: `ignoreUnknownKeys = true`, `encodeDefaults = false`, `explicitNulls = false`, `isLenient = true`
-- Content negotiation through Ktor `ContentNegotiation` plugin
+## Usage
 
-### Network
-
-- Base URL: `http://localhost:8000` (configurable at runtime)
-- Engine: Ktor CIO
-- Authentication: JWT Bearer token in `Authorization` header
-- Multipart uploads for employee photos and face recognition images
-
-## Build & Run
+### Run in development mode
 
 ```bash
-# Run desktop application
 ./gradlew run
+```
 
-# Create distributable package
+This launches the desktop application with hot reload enabled.
+
+### Build distributable package
+
+```bash
 ./gradlew packageDistributable
+```
 
-# Build MSI installer (Windows)
+Creates a distributable package for the current OS (`.dmg` for macOS, `.msi` for Windows, `.deb` for Linux).
+
+### Build installer (Windows)
+
+```bash
 ./gradlew packageMsi
+```
 
-# Run tests
+Generates an MSI installer for Windows.
+
+### Run tests
+
+```bash
 ./gradlew allTests
 ```
 
-**Entry point:** `com.example.kotlinapp.MainKt`
-**Main function:** `main()` in `main.kt` → `Window` → `App()` composable
+### Entry point
+
+- **Main class:** `com.example.kotlinapp.MainKt`
+- **Flow:** `main()` → `Window` → `App()` composable
+
+## Configuration
+
+### Runtime Settings
+
+The application provides an in-app settings overlay for:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Theme | Light / Dark mode | System default |
+| API Base URL | Backend server URL | `http://localhost:8000` |
+| Match Threshold | Minimum similarity for face match | — |
+| Camera Resolution | Webcam capture resolution | — |
+| FPS | Camera frames per second | — |
+
+Settings are persisted via `java.util.prefs.Preferences`.
+
+### Network
+
+- **Engine:** Ktor CIO
+- **Authentication:** JWT Bearer token in `Authorization` header
+- **Serialization:** `kotlinx-serialization` with `ignoreUnknownKeys = true`, `isLenient = true`
+- **Uploads:** Multipart for employee photos and face recognition images
 
 ## API Reference
 
 **Base URL:** `http://localhost:8000`
-**Authentication:** JWT Bearer token in `Authorization` header
 
 ### Authentication
 
-| Method | Endpoint | Auth | Request Body | Response |
-|--------|----------|------|-------------|----------|
-| POST | `/api/v1/admins/login` | No | `{username, password}` | `{access_token, token_type}` |
-| POST | `/api/v1/admins/register` | No | `{username, email, password, invite_code}` | `{id, username, email, created_at}` |
+| Method | Endpoint | Auth | Body | Response |
+|--------|----------|------|------|----------|
+| POST | `/api/v1/admins/login` | — | `{username, password}` | `{access_token, token_type}` |
+| POST | `/api/v1/admins/register` | — | `{username, email, password, invite_code}` | `{id, username, email, created_at}` |
 | GET | `/api/v1/admins/me` | Yes | — | `{id, username, email, created_at}` |
-
-### Invite Codes
-
-| Method | Endpoint | Auth | Request Body | Response |
-|--------|----------|------|-------------|----------|
-| POST | `/api/v1/admin/invites` | Yes | `{expires_hours}` | `{id, code, created_by, expires_at, is_used, created_at}` |
-| GET | `/api/v1/admin/invites` | Yes | — | `[{InviteCodeResponse}]` |
-| DELETE | `/api/v1/admin/invites/{id}` | Yes | — | 204 No Content |
 
 ### Employees
 
-| Method | Endpoint | Auth | Request Body | Response |
-|--------|----------|------|-------------|----------|
-| POST | `/api/v1/employees/register` | Yes | Multipart: form fields + image file | `{EmployeeResponse}` |
-| GET | `/api/v1/employees?skip=0&limit=100` | Yes | — | `[{EmployeeResponse}]` |
+| Method | Endpoint | Auth | Body | Response |
+|--------|----------|------|------|----------|
+| POST | `/api/v1/employees/register` | Yes | Multipart (fields + image) | `{EmployeeResponse}` |
+| GET | `/api/v1/employees` | Yes | — | `[{EmployeeResponse}]` |
 | GET | `/api/v1/employees/search?q=` | Yes | — | `[{EmployeeResponse}]` |
 | GET | `/api/v1/employees/stats` | Yes | — | `{total, active, inactive}` |
 | PUT | `/api/v1/employees/{id}` | Yes | `{EmployeeUpdate}` | `{EmployeeResponse}` |
-| DELETE | `/api/v1/employees/{id}` | Yes | — | 204 No Content |
+| DELETE | `/api/v1/employees/{id}` | Yes | — | 204 |
 
 ### Face Recognition
 
-| Method | Endpoint | Auth | Request Body | Response |
-|--------|----------|------|-------------|----------|
-| POST | `/api/v1/faces/recognize` | Yes | Multipart: image file | `{faces_detected, results[{bbox, matches[{id, username, similarity}]}]}` |
+| Method | Endpoint | Auth | Body | Response |
+|--------|----------|------|------|----------|
+| POST | `/api/v1/faces/recognize` | Yes | Multipart (image) | `{faces_detected, results}` |
 
-### Settings
+### Invite Codes
 
-| Method | Endpoint | Auth | Request Body | Response |
-|--------|----------|------|-------------|----------|
-| GET | `/api/v1/settings` | Yes | — | `{SettingsResponse}` |
-| PUT | `/api/v1/settings` | Yes | `{SettingsUpdate}` | `{SettingsResponse}` |
-| POST | `/api/v1/settings/backup` | Yes | — | 200 OK |
+| Method | Endpoint | Auth | Body | Response |
+|--------|----------|------|------|----------|
+| POST | `/api/v1/admin/invites` | Yes | `{expires_hours}` | `{InviteCodeResponse}` |
+| GET | `/api/v1/admin/invites` | Yes | — | `[{InviteCodeResponse}]` |
+| DELETE | `/api/v1/admin/invites/{id}` | Yes | — | 204 |
 
 ### Health Check
 
 | Method | Endpoint | Auth | Response |
 |--------|----------|------|----------|
-| GET | `/health` | No | `{status: "ok"}` |
+| GET | `/health` | — | `{status: "ok"}` |
 
-## Implementation Status
+## Contributing
 
-- **domain/** — Models ✅, Repository interfaces ✅
-- **data/dto/** — All DTOs ✅
-- **data/mapper/** — All mappers ✅
-- **data/local/** — LocalSettingsStorage ✅
-- **data/remote/** — ApiClient ✅, ApiService ✅, ApiException ✅
-- **data/repository/** — All 5 implementations ✅
-- **api/** — Demo client (dummyjson.com) ✅
-- **screen/** — 4 Voyager Screens ✅
-- **presentation/** — SettingsState ✅
-- **ui/** — Buttons, text fields, icons, settings, theme ✅
-- **util/** — ErrorMapper ✅
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is distributed under the MIT License. See [LICENSE](LICENSE) for details.

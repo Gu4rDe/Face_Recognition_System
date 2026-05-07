@@ -1,6 +1,33 @@
-# KotlinApp
+# Face Recognition System
 
-Десктопный клиент для системы распознавания лиц **Miit_FaceDetect**. Построен на **Compose Multiplatform** (JVM-таргет) с **Material3**, предоставляет UI для аутентификации администратора, управления сотрудниками, распознавания лиц и настроек приложения.
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.10.3-green.svg)](https://github.com/JetBrains/compose-multiplatform)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
+
+Десктопный клиент для системы распознавания лиц **Miit_FaceDetect**. Построен на **Compose Multiplatform** и **Material3**, предоставляет современный UI для аутентификации администратора, управления сотрудниками, распознавания лиц и настроек приложения.
+
+## Содержание
+
+- [Возможности](#возможности)
+- [Технологический стек](#технологический-стек)
+- [Архитектура](#архитектура)
+- [Структура проекта](#структура-проекта)
+- [Требования](#требования)
+- [Установка](#установка)
+- [Использование](#использование)
+- [Конфигурация](#конфигурация)
+- [Справочник по API](#справочник-по-api)
+- [Участие в разработке](#участие-в-разработке)
+- [Лицензия](#лицензия)
+
+## Возможности
+
+- **Аутентификация администратора** — вход, регистрация с инвайт-кодами, управление JWT Bearer-токеном
+- **Управление сотрудниками** — CRUD-операции, поиск, захват фото через веб-камеру, статистика сотрудников
+- **Распознавание лиц** — загрузка изображения или захват с веб-камеры, оверлей bounding box с цветовой индикацией уверенности, результаты сопоставления с данными сотрудников
+- **Настройки** — переключение темы (светлая/тёмная), настраиваемый базовый URL API, параметры распознавания лиц (порог совпадения, разрешение камеры, FPS), постоянное хранение
+- **Навигация** — навигация на основе Voyager с переключением секций
 
 ## Технологический стек
 
@@ -10,236 +37,201 @@
 | UI-фреймворк | Compose Multiplatform | 1.10.3 |
 | UI-тулкит | Material3 | 1.10.0-alpha05 |
 | Навигация | Voyager | 1.1.0-beta01 |
-| HTTP-клиент | Ktor Client (CIO engine) | 3.0.3 |
+| HTTP-клиент | Ktor Client (CIO) | 3.0.3 |
 | Сериализация | kotlinx-serialization-json | 1.7.3 |
 | Корутины | kotlinx-coroutines-swing | 1.10.2 |
-| Lifecycle | androidx.lifecycle (viewmodel, runtime) | 2.10.0 |
+| Lifecycle | androidx.lifecycle | 2.10.0 |
 | Логирование | SLF4J | 2.0.16 |
 | Тестирование | JUnit | 4.13.2 |
-| Hot Reload | Compose Hot Reload | 1.0.0 |
+| Веб-камера | webcam-capture | — |
 | Сборка | Gradle (Kotlin Multiplatform) | — |
-| Десктоп-упаковка | Compose Desktop (Dmg, Msi, Deb) | — |
 
 ## Архитектура
 
 Чистая архитектура (Clean Architecture) с тремя слоями и строгими правилами зависимостей:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 presentation                      │
-│   UI-компонуемые, Screen'ы (Voyager),            │
-│   SettingsState, тема                            │
-│   зависит от → domain                            │
-├─────────────────────────────────────────────────┤
-│                   domain                          │
-│   Бизнес-модели, интерфейсы репозиториев         │
-│   нет внешних зависимостей                       │
-├─────────────────────────────────────────────────┤
-│                    data                           │
-│   DTO, мапперы, ApiClient, ApiService,           │
-│   LocalSettingsStorage, реализации репозиториев  │
-│   зависит от → domain                            │
-└─────────────────────────────────────────────────┘
+presentation ──→ domain ←── data
 ```
+
+| Слой | Ответственность |
+|------|----------------|
+| **presentation** | UI-компоненты, экраны Voyager, SettingsState, темы |
+| **domain** | Бизнес-модели, интерфейсы репозиториев (без внешних зависимостей) |
+| **data** | DTO, мапперы, ApiClient, ApiService, LocalSettingsStorage, реализации репозиториев |
 
 **Правило зависимостей:** `presentation → domain ← data`. Слой domain не знает о data и presentation.
 
 **Вспомогательные компоненты:**
-- **ServiceLocator** — singleton DI-контейнер, создаёт и предоставляет ApiClient, ApiService, все репозитории
+- **ServiceLocator** — singleton DI-контейнер для ApiClient, ApiService и всех репозиториев
 - **util/ErrorMapper** — преобразует ApiException/NetworkException в пользовательские сообщения
 
 ## Структура проекта
 
 ```
-com.example.kotlinapp
+composeApp/src/jvmMain/kotlin/com/example/kotlinapp
 ├── main.kt                    # Точка входа (Window)
 ├── App.kt                     # Корневой composable
 ├── ServiceLocator.kt          # Singleton DI-контейнер
 ├── domain/
 │   ├── model/                  # Бизнесовые классы данных
-│   │   ├── Admin.kt
-│   │   ├── AuthResult.kt
-│   │   ├── Employee.kt
-│   │   ├── FaceRecognitionResult.kt
-│   │   ├── InviteCode.kt
-│   │   └── Settings.kt
 │   └── repository/             # Интерфейсы репозиториев
-│       ├── AuthRepository.kt
-│       ├── EmployeeRepository.kt
-│       ├── FaceRecognitionRepository.kt
-│       ├── InviteCodeRepository.kt
-│       └── SettingsRepository.kt
 ├── data/
 │   ├── local/                  # Локальное хранение настроек
-│   │   └── LocalSettingsStorage.kt
 │   ├── dto/                    # Сериализуемые DTO для API
-│   │   ├── AuthDto.kt
-│   │   ├── EmployeeDto.kt
-│   │   ├── FaceRecognitionDto.kt
-│   │   ├── InviteCodeDto.kt
-│   │   └── SettingsDto.kt
-│   ├── mapper/                 # Функции-расширения DTO ↔ Domain
-│   │   ├── AuthMappers.kt
-│   │   ├── EmployeeMappers.kt
-│   │   ├── FaceRecognitionMappers.kt
-│   │   ├── InviteCodeMappers.kt
-│   │   └── SettingsMappers.kt
-│   ├── remote/                 # Сетевой слой
-│   │   ├── ApiClient.kt
-│   │   ├── ApiService.kt
-│   │   └── ApiException.kt
+│   ├── mapper/                 # Мапперы DTO ↔ Domain
+│   ├── remote/                 # Сетевой слой (ApiClient, ApiService)
 │   └── repository/             # Реализации репозиториев
-│       ├── AuthRepositoryImpl.kt
-│       ├── EmployeeRepositoryImpl.kt
-│       ├── FaceRecognitionRepositoryImpl.kt
-│       ├── InviteCodeRepositoryImpl.kt
-│       └── SettingsRepositoryImpl.kt
-├── api/
-│   └── ApiService.kt           # Тестовый/демо-клиент (dummyjson.com)
-├── screen/                     # Voyager Screen'ы
-│   ├── HomeScreen.kt
-│   ├── LoginAdminScreen.kt
-│   ├── RegisterAdminScreen.kt
-│   └── AdminStubScreen.kt
-├── presentation/
-│   └── SettingsState.kt
-├── ui/
+├── screen/                     # Voyager экраны
+├── presentation/               # Управление состоянием UI
+├── ui/                         # Переиспользуемые UI-компоненты
 │   ├── buttons/
-│   │   └── LoginButton.kt
 │   ├── textfields/
-│   │   ├── LoginTextField.kt
-│   │   └── PasswordTextField.kt
 │   ├── icons/
-│   │   ├── SettingsIcon.kt
-│   │   └── VisibilityIcon.kt
 │   ├── settings/
-│   │   └── SettingsOverlay.kt
 │   └── theme/
-│       ├── Color.kt
-│       └── Theme.kt
-└── util/
-    └── ErrorMapper.kt
+└── util/                       # Утилиты
 ```
 
-## Функциональность
+## Требования
 
-- **Аутентификация администратора** — вход, регистрация с инвайт-кодами, управление JWT Bearer-токеном
-- **Управление сотрудниками** — CRUD-операции, поиск, захват фото через веб-камеру, статистика сотрудников
-- **Распознавание лиц** — загрузка изображения или захват с веб-камеры, оверлей bounding box с цветовой индикацией уверенности, результаты сопоставления с данными сотрудников
-- **Настройки** — переключение темы (светлая/тёмная), настраиваемый базовый URL API, параметры распознавания лиц (порог совпадения, разрешение камеры, FPS), постоянное хранение через `java.util.prefs.Preferences`
-- **Навигация** — навигация на основе Voyager с переключением секций через composable-функции (Dashboard, Employees, Face Recognition)
+| Требование | Версия | Примечание |
+|------------|--------|------------|
+| JDK | 17+ | Требуется для JVM-таргета |
+| Gradle | Встроен | Обёртка включена (`gradlew` / `gradlew.bat`) |
+| ОС | Windows / macOS / Linux | Только десктопные таргеты |
 
-## Соглашения
+## Установка
 
-### Именование
+1. **Клонируйте репозиторий**
+   ```bash
+   git clone <repository-url>
+   cd my-frontend-project
+   ```
 
-| Категория | Соглашение | Пример |
-|-----------|-----------|--------|
-| Доменные модели | `camelCase`, plain data classes | `Employee`, `AuthResult` |
-| Поля DTO | `snake_case` (совпадает с JSON сервера) | `employee_id`, `created_at` |
-| Доменные поля | `camelCase` | `employeeId`, `createdAt` |
-| Классы DTO | Суффикс `Dto` | `EmployeeResponseDto` |
-| Интерфейсы репозиториев | Суффикс `Repository` | `AuthRepository` |
-| Реализации репозиториев | Суффикс `RepositoryImpl` | `AuthRepositoryImpl` |
-| Мапперы | Функции-расширения `toDto()` / `toDomain()` | `EmployeeResponseDto.toDomain()` |
-| Экраны навигации | Суффикс `Screen` | `HomeScreen`, `LoginAdminScreen` |
-| Состояния UI | Суффикс `State` | `SettingsState` |
-| Оверлеи | Суффикс `Overlay` | `SettingsOverlay` |
+2. **Проверьте установку JDK**
+   ```bash
+   java -version
+   ```
+   Убедитесь, что JDK 17 или выше установлен и `JAVA_HOME` настроен.
 
-### Сериализация
+3. **Соберите проект**
+   ```bash
+   ./gradlew build
+   ```
+   На Windows используйте `gradlew.bat build`.
 
-- JSON через `kotlinx-serialization`
-- Конфигурация: `ignoreUnknownKeys = true`, `encodeDefaults = false`, `explicitNulls = false`, `isLenient = true`
-- Content negotiation через плагин Ktor `ContentNegotiation`
+## Использование
 
-### Сеть
-
-- Базовый URL: `http://localhost:8000` (настраивается во время выполнения)
-- Движок: Ktor CIO
-- Аутентификация: JWT Bearer-токен в заголовке `Authorization`
-- Multipart-загрузки для фото сотрудников и изображений распознавания лиц
-
-## Сборка и запуск
+### Запуск в режиме разработки
 
 ```bash
-# Запуск десктопного приложения
 ./gradlew run
+```
 
-# Создание дистрибутива
+Запускает десктопное приложение с включённым hot reload.
+
+### Сборка дистрибутива
+
+```bash
 ./gradlew packageDistributable
+```
 
-# Сборка MSI-установщика (Windows)
+Создаёт дистрибутив для текущей ОС (`.dmg` для macOS, `.msi` для Windows, `.deb` для Linux).
+
+### Сборка установщика (Windows)
+
+```bash
 ./gradlew packageMsi
+```
 
-# Запуск тестов
+Генерирует MSI-установщик для Windows.
+
+### Запуск тестов
+
+```bash
 ./gradlew allTests
 ```
 
-**Точка входа:** `com.example.kotlinapp.MainKt`
-**Главная функция:** `main()` в `main.kt` → `Window` → `App()` composable
+### Точка входа
 
-## Справочник по API сервера
+- **Главный класс:** `com.example.kotlinapp.MainKt`
+- **Поток:** `main()` → `Window` → `App()` composable
+
+## Конфигурация
+
+### Настройки во время выполнения
+
+Приложение предоставляет оверлей настроек для:
+
+| Настройка | Описание | По умолчанию |
+|-----------|----------|--------------|
+| Тема | Светлая / Тёмная | Системная |
+| Базовый URL API | URL бэкенд-сервера | `http://localhost:8000` |
+| Порог совпадения | Минимальное сходство для распознавания лица | — |
+| Разрешение камеры | Разрешение захвата веб-камеры | — |
+| FPS | Кадров в секунду | — |
+
+Настройки сохраняются через `java.util.prefs.Preferences`.
+
+### Сеть
+
+- **Движок:** Ktor CIO
+- **Аутентификация:** JWT Bearer-токен в заголовке `Authorization`
+- **Сериализация:** `kotlinx-serialization` с `ignoreUnknownKeys = true`, `isLenient = true`
+- **Загрузки:** Multipart для фото сотрудников и изображений распознавания лиц
+
+## Справочник по API
 
 **Базовый URL:** `http://localhost:8000`
-**Аутентификация:** JWT Bearer-токен в заголовке `Authorization`
 
 ### Аутентификация
 
-| Метод | Эндпоинт | Auth | Тело запроса | Ответ |
-|-------|----------|------|-------------|-------|
-| POST | `/api/v1/admins/login` | Нет | `{username, password}` | `{access_token, token_type}` |
-| POST | `/api/v1/admins/register` | Нет | `{username, email, password, invite_code}` | `{id, username, email, created_at}` |
+| Метод | Эндпоинт | Auth | Тело | Ответ |
+|-------|----------|------|------|-------|
+| POST | `/api/v1/admins/login` | — | `{username, password}` | `{access_token, token_type}` |
+| POST | `/api/v1/admins/register` | — | `{username, email, password, invite_code}` | `{id, username, email, created_at}` |
 | GET | `/api/v1/admins/me` | Да | — | `{id, username, email, created_at}` |
-
-### Инвайт-коды
-
-| Метод | Эндпоинт | Auth | Тело запроса | Ответ |
-|-------|----------|------|-------------|-------|
-| POST | `/api/v1/admin/invites` | Да | `{expires_hours}` | `{id, code, created_by, expires_at, is_used, created_at}` |
-| GET | `/api/v1/admin/invites` | Да | — | `[{InviteCodeResponse}]` |
-| DELETE | `/api/v1/admin/invites/{id}` | Да | — | 204 No Content |
 
 ### Сотрудники
 
-| Метод | Эндпоинт | Auth | Тело запроса | Ответ |
-|-------|----------|------|-------------|-------|
-| POST | `/api/v1/employees/register` | Да | Multipart: поля формы + файл изображения | `{EmployeeResponse}` |
-| GET | `/api/v1/employees?skip=0&limit=100` | Да | — | `[{EmployeeResponse}]` |
+| Метод | Эндпоинт | Auth | Тело | Ответ |
+|-------|----------|------|------|-------|
+| POST | `/api/v1/employees/register` | Да | Multipart (поля + изображение) | `{EmployeeResponse}` |
+| GET | `/api/v1/employees` | Да | — | `[{EmployeeResponse}]` |
 | GET | `/api/v1/employees/search?q=` | Да | — | `[{EmployeeResponse}]` |
 | GET | `/api/v1/employees/stats` | Да | — | `{total, active, inactive}` |
 | PUT | `/api/v1/employees/{id}` | Да | `{EmployeeUpdate}` | `{EmployeeResponse}` |
-| DELETE | `/api/v1/employees/{id}` | Да | — | 204 No Content |
+| DELETE | `/api/v1/employees/{id}` | Да | — | 204 |
 
 ### Распознавание лиц
 
-| Метод | Эндпоинт | Auth | Тело запроса | Ответ |
-|-------|----------|------|-------------|-------|
-| POST | `/api/v1/faces/recognize` | Да | Multipart: файл изображения | `{faces_detected, results[{bbox, matches[{id, username, similarity}]}]}` |
+| Метод | Эндпоинт | Auth | Тело | Ответ |
+|-------|----------|------|------|-------|
+| POST | `/api/v1/faces/recognize` | Да | Multipart (изображение) | `{faces_detected, results}` |
 
-### Настройки
+### Инвайт-коды
 
-| Метод | Эндпоинт | Auth | Тело запроса | Ответ |
-|-------|----------|------|-------------|-------|
-| GET | `/api/v1/settings` | Да | — | `{SettingsResponse}` |
-| PUT | `/api/v1/settings` | Да | `{SettingsUpdate}` | `{SettingsResponse}` |
-| POST | `/api/v1/settings/backup` | Да | — | 200 OK |
+| Метод | Эндпоинт | Auth | Тело | Ответ |
+|-------|----------|------|------|-------|
+| POST | `/api/v1/admin/invites` | Да | `{expires_hours}` | `{InviteCodeResponse}` |
+| GET | `/api/v1/admin/invites` | Да | — | `[{InviteCodeResponse}]` |
+| DELETE | `/api/v1/admin/invites/{id}` | Да | — | 204 |
 
-### Здоровье сервера
+### Проверка здоровья сервера
 
 | Метод | Эндпоинт | Auth | Ответ |
 |-------|----------|------|-------|
-| GET | `/health` | Нет | `{status: "ok"}` |
+| GET | `/health` | — | `{status: "ok"}` |
 
-## Статус реализации
+## Участие в разработке
 
-- **domain/** — Модели ✅, Интерфейсы репозиториев ✅
-- **data/dto/** — Все DTO ✅
-- **data/mapper/** — Все мапперы ✅
-- **data/local/** — LocalSettingsStorage ✅
-- **data/remote/** — ApiClient ✅, ApiService ✅, ApiException ✅
-- **data/repository/** — Все 5 реализаций ✅
-- **api/** — Демо-клиент (dummyjson.com) ✅
-- **screen/** — 4 Voyager Screen'а ✅
-- **presentation/** — SettingsState ✅
-- **ui/** — Кнопки, текстовые поля, иконки, настройки, тема ✅
-- **util/** — ErrorMapper ✅
+1. Форкните репозиторий
+2. Создайте ветку с функциональностью (`git checkout -b feature/amazing-feature`)
+3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
+4. Отправьте в ветку (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
+
+## Лицензия
+
+Этот проект распространяется под лицензией MIT. Подробнее см. [LICENSE](LICENSE).
