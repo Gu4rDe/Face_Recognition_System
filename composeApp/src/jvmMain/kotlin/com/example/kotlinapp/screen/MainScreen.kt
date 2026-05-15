@@ -23,43 +23,47 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.kotlinapp.ServiceLocator
+import androidx.navigation.NavHostController
+import com.example.kotlinapp.navigation.AppScreen
 import com.example.kotlinapp.ui.icons.DashboardIcon
 import com.example.kotlinapp.ui.icons.FaceIcon
 import com.example.kotlinapp.ui.icons.LogoutIcon
 import com.example.kotlinapp.ui.icons.PeopleIcon
 
-class MainScreen : Screen {
+enum class MainSection {
+    Dashboard, Employees, FaceRecognition
+}
 
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        var selectedItem by remember { mutableStateOf<MenuItem>(MenuItem.Dashboard) }
+@Composable
+fun MainScreen(navController: NavHostController, initialSection: String = "dashboard") {
+    val initialEnum = when (initialSection) {
+        "employees" -> MainSection.Employees
+        "face_recognition" -> MainSection.FaceRecognition
+        else -> MainSection.Dashboard
+    }
+    var currentSection by remember { mutableStateOf(initialEnum) }
 
-        Row(modifier = Modifier.fillMaxSize()) {
-            SidebarRail(
-                selectedItem = selectedItem,
-                onSelectItem = { selectedItem = it },
-                onLogout = {
-                    ServiceLocator.authRepository.setToken(null)
-                    navigator.pop()
+    Row(modifier = Modifier.fillMaxSize()) {
+        SidebarRail(
+            selectedSection = currentSection,
+            onSelectSection = { currentSection = it },
+            onLogout = {
+                navController.navigate(AppScreen.Login) {
+                    popUpTo<AppScreen.Login> { inclusive = true }
                 }
-            )
+            }
+        )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                when (selectedItem) {
-                    MenuItem.Dashboard -> DashboardContent()
-                    MenuItem.Employees -> EmployeeContent()
-                    MenuItem.FaceRecognition -> FaceRecognitionContent()
-                }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
+            when (currentSection) {
+                MainSection.Dashboard -> DashboardContent()
+                MainSection.Employees -> EmployeeContent()
+                MainSection.FaceRecognition -> FaceRecognitionContent()
             }
         }
     }
@@ -67,8 +71,8 @@ class MainScreen : Screen {
 
 @Composable
 private fun SidebarRail(
-    selectedItem: MenuItem,
-    onSelectItem: (MenuItem) -> Unit,
+    selectedSection: MainSection,
+    onSelectSection: (MainSection) -> Unit,
     onLogout: () -> Unit
 ) {
     Surface(
@@ -82,8 +86,8 @@ private fun SidebarRail(
         ) {
             SidebarItem(
                 label = "Панель",
-                selected = selectedItem == MenuItem.Dashboard,
-                onClick = { onSelectItem(MenuItem.Dashboard) },
+                selected = selectedSection == MainSection.Dashboard,
+                onClick = { onSelectSection(MainSection.Dashboard) },
                 icon = { tint ->
                     DashboardIcon(modifier = Modifier.size(24.dp), tint = tint)
                 }
@@ -91,8 +95,8 @@ private fun SidebarRail(
 
             SidebarItem(
                 label = "Сотрудники",
-                selected = selectedItem == MenuItem.Employees,
-                onClick = { onSelectItem(MenuItem.Employees) },
+                selected = selectedSection == MainSection.Employees,
+                onClick = { onSelectSection(MainSection.Employees) },
                 icon = { tint ->
                     PeopleIcon(modifier = Modifier.size(24.dp), tint = tint)
                 }
@@ -100,8 +104,8 @@ private fun SidebarRail(
 
             SidebarItem(
                 label = "Лица",
-                selected = selectedItem == MenuItem.FaceRecognition,
-                onClick = { onSelectItem(MenuItem.FaceRecognition) },
+                selected = selectedSection == MainSection.FaceRecognition,
+                onClick = { onSelectSection(MainSection.FaceRecognition) },
                 icon = { tint ->
                     FaceIcon(modifier = Modifier.size(24.dp), tint = tint)
                 }

@@ -8,12 +8,19 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import org.jetbrains.skia.Image
 
-fun loadAppIcon() = BitmapPainter(
-    Image.makeFromEncoded(
-        Thread.currentThread().contextClassLoader
-            .getResourceAsStream("app.png")!!.readBytes()
-    ).toComposeImageBitmap()
-)
+fun loadAppIcon(): BitmapPainter? {
+    return try {
+        val stream = Thread.currentThread().contextClassLoader.getResourceAsStream("app.png")
+        if (stream != null) {
+            BitmapPainter(Image.makeFromEncoded(stream.readBytes()).toComposeImageBitmap())
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
 fun main() = application {
     Window(

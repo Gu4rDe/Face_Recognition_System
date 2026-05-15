@@ -1,41 +1,38 @@
 package com.example.kotlinapp
 
 import com.example.kotlinapp.util.FormValidator
-import org.junit.Test
-import org.junit.Assert.*
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.string.shouldContain
 
-class PasswordRecoveryValidationTest {
+class PasswordRecoveryValidationTest : FunSpec({
 
-    @Test
-    fun validateConfirmPassword_matchingPasswords_returnsNull() {
+    test("validateConfirmPassword_matchingPasswords_returnsNull") {
         val result = FormValidator.validateConfirmPassword("Test1234!", "Test1234!")
-        assertNull(result)
+        result.shouldBeNull()
     }
 
-    @Test
-    fun validateConfirmPassword_blankConfirm_returnsError() {
+    test("validateConfirmPassword_blankConfirm_returnsError") {
         val result = FormValidator.validateConfirmPassword("Test1234!", "")
-        assertNotNull(result)
-        assertTrue(result!!.contains("Подтвердите"))
+        result.shouldNotBeNull()
+        result shouldContain "Подтвердите"
     }
 
-    @Test
-    fun validateConfirmPassword_mismatchedPasswords_returnsError() {
+    test("validateConfirmPassword_mismatchedPasswords_returnsError") {
         val result = FormValidator.validateConfirmPassword("Test1234!", "Different123@")
-        assertNotNull(result)
-        assertTrue(result!!.contains("не совпадают"))
+        result.shouldNotBeNull()
+        result shouldContain "не совпадают"
     }
 
-    @Test
-    fun validateConfirmPassword_bothBlank_returnsError() {
+    test("validateConfirmPassword_bothBlank_returnsError") {
         val result = FormValidator.validateConfirmPassword("", "")
-        assertNotNull(result)
+        result.shouldNotBeNull()
     }
 
-    @Test
-    fun validateConfirmPassword_caseSensitive_returnsError() {
+    test("validateConfirmPassword_caseSensitive_returnsError") {
         val result = FormValidator.validateConfirmPassword("Test1234!", "test1234!")
-        assertNotNull(result)
-        assertTrue(result!!.contains("не совпадают"))
+        result.shouldNotBeNull()
+        result shouldContain "не совпадают"
     }
-}
+})

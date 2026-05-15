@@ -8,24 +8,27 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLBuilder
+import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlin.time.Duration.Companion.seconds
 
 class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
 
     var baseUrl: String = initialBaseUrl
         set(value) {
-            field = value
-            rebuildClient()
+            if (field != value) {
+                field = value
+                rebuildClient()
+            }
         }
 
     var token: String? = null
 
+    @Volatile
     var client: HttpClient = buildClient()
         private set
 
@@ -45,16 +48,27 @@ class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
             level = LogLevel.INFO
         }
         defaultRequest {
-            url(baseUrl)
+            // Use takeFrom to safely merge base URL with relative paths
+            url.takeFrom(URLBuilder(baseUrl).apply {
+                // Ensure base path is preserved if present in baseUrl
+            })
         }
     }
 
     private fun rebuildClient() {
-        val old = client
+        val oldClient = client
         client = buildClient()
         closeScope.launch {
-            try { old.close() } catch (_: Exception) {}
+            try {
+                oldClient.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+    }
+
+    fun close() {
+        client.close()
     }
 }
 

@@ -21,8 +21,10 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.voyager.navigator)
-            implementation(libs.voyager.transitions)
+            implementation(libs.compose.navigation)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -38,23 +40,21 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.slf4j.simple)
             implementation(libs.webcam.capture)
-
-
         }
         jvmTest.dependencies {
-            implementation(libs.junit)
-            implementation(libs.kotlin.testJunit)
+            implementation(libs.kotest.runner.junit5)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.mockk)
         }
     }
 }
-
 
 compose.desktop {
     application {
         mainClass = "com.example.kotlinapp.MainKt"
 
         nativeDistributions {
-            targetFormats( TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Face Recognition System"
             packageVersion = "1.0.0"
 
@@ -63,4 +63,8 @@ compose.desktop {
             }
         }
     }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
