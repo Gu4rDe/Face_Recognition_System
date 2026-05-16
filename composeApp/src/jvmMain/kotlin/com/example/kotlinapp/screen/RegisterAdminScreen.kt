@@ -10,35 +10,35 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.kotlinapp.ServiceLocator
-import com.example.kotlinapp.domain.model.AdminRegister
 import com.example.kotlinapp.navigation.AppScreen
 import com.example.kotlinapp.ui.buttons.LoginButton
 import com.example.kotlinapp.ui.textfields.LoginTextField
 import com.example.kotlinapp.ui.textfields.PasswordTextField
 import com.example.kotlinapp.util.FormValidator
-import com.example.kotlinapp.util.mapException
-import kotlinx.coroutines.launch
+import com.example.kotlinapp.viewmodel.RegisterUiState
+import com.example.kotlinapp.viewmodel.RegisterViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun RegisterScreen(navController: NavHostController) {
-    val coroutineScope = rememberCoroutineScope()
+fun RegisterScreen(
+    navController: NavHostController,
+    viewModel: RegisterViewModel = koinViewModel()
+) {
+    var uiState by remember { mutableStateOf(RegisterUiState()) }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var fieldErrors by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     val usernameHint by remember {
@@ -66,6 +66,19 @@ fun RegisterScreen(navController: NavHostController) {
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
+    }
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            viewModel.resetSuccess()
+            navController.navigate(AppScreen.Main()) {
+                popUpTo<AppScreen.Login> { inclusive = true }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -80,9 +93,9 @@ fun RegisterScreen(navController: NavHostController) {
         LoginTextField(
             loginValue = username, onLoginChange = {
                 username = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "username"
-            }, enabled = !isLoading,
+            }, enabled = !uiState.isLoading,
             supportingText = fieldErrors["username"] ?: usernameHint,
             isError = fieldErrors["username"] != null,
             modifier = Modifier.width(300.dp).padding(bottom = 16.dp)
@@ -92,13 +105,13 @@ fun RegisterScreen(navController: NavHostController) {
             value = email,
             onValueChange = {
                 email = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "email"
             },
             label = { Text("Email") },
             placeholder = { Text("Введите ваш email") },
             singleLine = true,
-            enabled = !isLoading,
+            enabled = !uiState.isLoading,
             supportingText = if (fieldErrors["email"] != null) { { Text(fieldErrors["email"]!!) } } else if (emailHint != null) { { Text(emailHint!!) } } else null,
             isError = fieldErrors["email"] != null,
             modifier = Modifier.width(300.dp).padding(bottom = 16.dp)
@@ -107,9 +120,9 @@ fun RegisterScreen(navController: NavHostController) {
         PasswordTextField(
             passwordValue = password, onPasswordChange = {
                 password = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "password"
-            }, enabled = !isLoading,
+            }, enabled = !uiState.isLoading,
             supportingText = fieldErrors["password"] ?: passwordHint,
             isError = fieldErrors["password"] != null,
             modifier = Modifier.width(300.dp).padding(bottom = 16.dp)
@@ -119,19 +132,19 @@ fun RegisterScreen(navController: NavHostController) {
             value = inviteCode,
             onValueChange = {
                 inviteCode = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "inviteCode"
             },
             label = { Text("Код приглашения") },
             placeholder = { Text("Введите код приглашения") },
             singleLine = true,
-            enabled = !isLoading,
+            enabled = !uiState.isLoading,
             supportingText = if (fieldErrors["inviteCode"] != null) { { Text(fieldErrors["inviteCode"]!!) } } else if (inviteHint != null) { { Text(inviteHint!!) } } else null,
             isError = fieldErrors["inviteCode"] != null,
             modifier = Modifier.width(300.dp).padding(bottom = 16.dp)
         )
 
-        errorMessage?.let { message ->
+        uiState.errorMessage?.let { message ->
             Text(
                 text = message,
                 color = MaterialTheme.colorScheme.error,
@@ -154,39 +167,18 @@ fun RegisterScreen(navController: NavHostController) {
                 fieldErrors = newErrors
 
                 if (newErrors.isNotEmpty()) {
-                    errorMessage = null
                     return@LoginButton
                 }
 
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    try {
-                        ServiceLocator.authRepository.register(
-                            AdminRegister(
-                                username = username.trim(),
-                                email = email.trim(),
-                                password = password,
-                                inviteCode = inviteCode.trim()
-                            )
-                        )
-                        navController.navigate(AppScreen.Main()) {
-                            popUpTo<AppScreen.Login> { inclusive = true }
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = mapException(e)
-                    } finally {
-                        isLoading = false
-                    }
-                }
+                viewModel.register(username.trim(), email.trim(), password, inviteCode.trim())
             },
             text = "Зарегистрироваться",
-            loading = isLoading,
+            loading = uiState.isLoading,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         TextButton(
-            onClick = { navController.popBackStack() }, enabled = !isLoading
+            onClick = { navController.popBackStack() }, enabled = !uiState.isLoading
         ) {
             Text(text = "Уже есть аккаунт? Войти")
         }

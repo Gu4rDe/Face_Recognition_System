@@ -47,6 +47,7 @@ private fun ByteArray?.toImageBitmapOrNull(): ImageBitmap? {
 
 @Composable
 fun PhotoCaptureDialog(
+    webcamService: WebcamService,
     onResult: (ByteArray?) -> Unit
 ) {
     var capturedPhoto by remember { mutableStateOf<ByteArray?>(null) }
@@ -57,7 +58,7 @@ fun PhotoCaptureDialog(
     var isStreaming by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val opened = WebcamService.open()
+        val opened = webcamService.open()
         if (!opened) {
             cameraError = true
         } else {
@@ -67,13 +68,13 @@ fun PhotoCaptureDialog(
 
     DisposableEffect(Unit) {
         onDispose {
-            WebcamService.close()
+            webcamService.close()
         }
     }
 
     LaunchedEffect(isStreaming, capturedPhoto) {
         while (isStreaming && capturedPhoto == null) {
-            val frame = WebcamService.capture()
+            val frame = webcamService.capture()
             if (frame != null) {
                 preview = frame.toImageBitmapOrNull()
             }
@@ -130,7 +131,7 @@ fun PhotoCaptureDialog(
                 ) {
                     if (capturedPhoto == null && !cameraError) {
                         Button(onClick = {
-                            capturedPhoto = WebcamService.capture()
+                            capturedPhoto = webcamService.capture()
                             if (capturedPhoto != null) {
                                 isStreaming = false
                                 preview = capturedPhoto.toImageBitmapOrNull()

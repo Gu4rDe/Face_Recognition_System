@@ -23,44 +23,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.kotlinapp.ServiceLocator
-import com.example.kotlinapp.domain.model.EmployeeStats
-import com.example.kotlinapp.util.mapException
+import com.example.kotlinapp.viewmodel.DashboardViewModel
+import com.example.kotlinapp.viewmodel.DashboardUiState
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun DashboardContent() {
-    var stats by remember { mutableStateOf<EmployeeStats?>(null) }
-    var statsError by remember { mutableStateOf<String?>(null) }
-    var isLoadingStats by remember { mutableStateOf(true) }
+fun DashboardContent(
+    viewModel: DashboardViewModel = koinViewModel()
+) {
+    var uiState by remember { mutableStateOf(DashboardUiState()) }
 
-    var serverStatus by remember { mutableStateOf("Проверяется...") }
-    var isLoadingServer by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        isLoadingStats = true
-        try {
-            stats = ServiceLocator.employeeRepository.getEmployeeStats()
-            statsError = null
-        } catch (e: Exception) {
-            statsError = mapException(e)
-        } finally {
-            isLoadingStats = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        isLoadingServer = true
-        try {
-            if (ServiceLocator.apiService.healthCheck()) {
-                serverStatus = "Подключено"
-            } else {
-                serverStatus = "Не подключено"
-            }
-        } catch (_: Exception) {
-            serverStatus = "Не подключено"
-        } finally {
-            isLoadingServer = false
-        }
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -76,23 +50,23 @@ fun DashboardContent() {
         ) {
             StatCard(
                 title = "Всего",
-                value = stats?.total,
-                isLoading = isLoadingStats,
-                error = statsError,
+                value = uiState.stats?.total,
+                isLoading = uiState.isLoadingStats,
+                error = uiState.statsError,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 title = "Активных",
-                value = stats?.active,
-                isLoading = isLoadingStats,
-                error = statsError,
+                value = uiState.stats?.active,
+                isLoading = uiState.isLoadingStats,
+                error = uiState.statsError,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 title = "Неактивных",
-                value = stats?.inactive,
-                isLoading = isLoadingStats,
-                error = statsError,
+                value = uiState.stats?.inactive,
+                isLoading = uiState.isLoadingStats,
+                error = uiState.statsError,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -100,9 +74,9 @@ fun DashboardContent() {
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (serverStatus == "Подключено")
+                containerColor = if (uiState.serverStatus == "Подключено")
                     MaterialTheme.colorScheme.primaryContainer
-                else if (serverStatus == "Не подключено")
+                else if (uiState.serverStatus == "Не подключено")
                     MaterialTheme.colorScheme.errorContainer
                 else
                     MaterialTheme.colorScheme.surfaceVariant
@@ -112,13 +86,13 @@ fun DashboardContent() {
                 Text("Статус сервера", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (isLoadingServer) {
+                    if (uiState.isLoadingServer) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     }
                     Text(
-                        text = serverStatus,
+                        text = uiState.serverStatus,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = when (serverStatus) {
+                        color = when (uiState.serverStatus) {
                             "Подключено" -> MaterialTheme.colorScheme.primary
                             "Не подключено" -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.onSurface

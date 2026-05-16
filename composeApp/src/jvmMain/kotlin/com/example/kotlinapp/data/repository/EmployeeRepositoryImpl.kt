@@ -18,6 +18,11 @@ class EmployeeRepositoryImpl(
         return apiService.createEmployee(dto, create.photoBytes).toDomain()
     }
 
+    override suspend fun registerWithPhotos(create: EmployeeCreate, photos: List<ByteArray>): Employee {
+        val dto = create.toDto()
+        return apiService.createEmployeeWithPhotos(dto, photos).toDomain()
+    }
+
     override suspend fun listEmployees(skip: Int, limit: Int): List<Employee> {
         return apiService.listEmployees(skip, limit).map { it.toDomain() }
     }

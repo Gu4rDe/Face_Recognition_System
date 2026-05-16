@@ -29,13 +29,19 @@ import com.example.kotlinapp.ui.icons.DashboardIcon
 import com.example.kotlinapp.ui.icons.FaceIcon
 import com.example.kotlinapp.ui.icons.LogoutIcon
 import com.example.kotlinapp.ui.icons.PeopleIcon
+import com.example.kotlinapp.viewmodel.LoginViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 enum class MainSection {
     Dashboard, Employees, FaceRecognition
 }
 
 @Composable
-fun MainScreen(navController: NavHostController, initialSection: String = "dashboard") {
+fun MainScreen(
+    navController: NavHostController,
+    initialSection: String = "dashboard",
+    loginViewModel: LoginViewModel = koinViewModel()
+) {
     val initialEnum = when (initialSection) {
         "employees" -> MainSection.Employees
         "face_recognition" -> MainSection.FaceRecognition
@@ -48,6 +54,7 @@ fun MainScreen(navController: NavHostController, initialSection: String = "dashb
             selectedSection = currentSection,
             onSelectSection = { currentSection = it },
             onLogout = {
+                loginViewModel.logout()
                 navController.navigate(AppScreen.Login) {
                     popUpTo<AppScreen.Login> { inclusive = true }
                 }

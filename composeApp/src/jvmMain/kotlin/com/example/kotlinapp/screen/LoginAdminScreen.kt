@@ -10,33 +10,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.kotlinapp.ServiceLocator
-import com.example.kotlinapp.domain.model.AdminLogin
 import com.example.kotlinapp.navigation.AppScreen
 import com.example.kotlinapp.ui.buttons.LoginButton
 import com.example.kotlinapp.ui.textfields.LoginTextField
 import com.example.kotlinapp.ui.textfields.PasswordTextField
 import com.example.kotlinapp.util.FormValidator
-import com.example.kotlinapp.util.mapException
-import kotlinx.coroutines.launch
+import com.example.kotlinapp.viewmodel.LoginUiState
+import com.example.kotlinapp.viewmodel.LoginViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun LoginScreen(navController: NavHostController) {
-    val coroutineScope = rememberCoroutineScope()
+fun LoginScreen(
+    navController: NavHostController,
+    viewModel: LoginViewModel = koinViewModel()
+) {
+    var uiState by remember { mutableStateOf(LoginUiState()) }
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var fieldErrors by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     val loginHint by remember {
@@ -49,6 +49,19 @@ fun LoginScreen(navController: NavHostController) {
         derivedStateOf {
             if (password.isBlank()) "Минимум 8 символов, буквы, цифры и спецсимволы"
             else null
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
+    }
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            viewModel.resetSuccess()
+            navController.navigate(AppScreen.Main()) {
+                popUpTo<AppScreen.Login> { inclusive = true }
+            }
         }
     }
 
@@ -69,10 +82,10 @@ fun LoginScreen(navController: NavHostController) {
             loginValue = login,
             onLoginChange = {
                 login = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "login"
             },
-            enabled = !isLoading,
+            enabled = !uiState.isLoading,
             supportingText = fieldErrors["login"] ?: loginHint,
             isError = fieldErrors["login"] != null,
             modifier = Modifier
@@ -84,10 +97,10 @@ fun LoginScreen(navController: NavHostController) {
             passwordValue = password,
             onPasswordChange = {
                 password = it
-                errorMessage = null
+                viewModel.clearError()
                 fieldErrors = fieldErrors - "password"
             },
-            enabled = !isLoading,
+            enabled = !uiState.isLoading,
             supportingText = fieldErrors["password"] ?: passwordHint,
             isError = fieldErrors["password"] != null,
             modifier = Modifier
@@ -95,7 +108,7 @@ fun LoginScreen(navController: NavHostController) {
                 .padding(bottom = 16.dp)
         )
 
-        errorMessage?.let { message ->
+        uiState.errorMessage?.let { message ->
             Text(
                 text = message,
                 color = MaterialTheme.colorScheme.error,
@@ -114,49 +127,33 @@ fun LoginScreen(navController: NavHostController) {
                 fieldErrors = newErrors
 
                 if (newErrors.isNotEmpty()) {
-                    errorMessage = null
                     return@LoginButton
                 }
 
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    try {
-                        ServiceLocator.authRepository.login(
-                            AdminLogin(username = login.trim(), password = password)
-                        )
-                        navController.navigate(AppScreen.Main()) {
-                            popUpTo<AppScreen.Login> { inclusive = true }
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = mapException(e)
-                    } finally {
-                        isLoading = false
-                    }
-                }
+                viewModel.login(login.trim(), password)
             },
             text = "Войти",
-            loading = isLoading,
+            loading = uiState.isLoading,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         TextButton(
             onClick = { navController.navigate(AppScreen.Register) },
-            enabled = !isLoading
+            enabled = !uiState.isLoading
         ) {
             Text(text = "Зарегистрироваться")
         }
 
         TextButton(
             onClick = { navController.navigate(AppScreen.PasswordRecovery) },
-            enabled = !isLoading
+            enabled = !uiState.isLoading
         ) {
             Text(text = "Забыли пароль?")
         }
 
         Button(
             onClick = { navController.popBackStack() },
-            enabled = !isLoading,
+            enabled = !uiState.isLoading,
             modifier = Modifier
                 .width(300.dp)
                 .padding(top = 8.dp)

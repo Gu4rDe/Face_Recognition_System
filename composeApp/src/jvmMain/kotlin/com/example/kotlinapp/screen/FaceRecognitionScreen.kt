@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,41 +31,45 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.kotlinapp.ServiceLocator
-import com.example.kotlinapp.domain.model.Employee
 import com.example.kotlinapp.domain.model.FaceRecognitionResult
-import com.example.kotlinapp.presentation.SettingsState
+import com.example.kotlinapp.service.WebcamService
 import com.example.kotlinapp.ui.components.FaceBoundingBoxOverlay
 import com.example.kotlinapp.ui.dialogs.PhotoCaptureDialog
-import com.example.kotlinapp.util.mapException
+import com.example.kotlinapp.viewmodel.FaceRecognitionUiState
+import com.example.kotlinapp.viewmodel.FaceRecognitionViewModel
+import com.example.kotlinapp.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
+import org.jetbrains.skia.Image as SkiaImage
+import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
-import org.jetbrains.skia.Image as SkiaImage
 
 @Composable
-fun FaceRecognitionContent() {
+fun FaceRecognitionContent(
+    viewModel: FaceRecognitionViewModel = koinViewModel()
+) {
+    var uiState by remember { mutableStateOf(FaceRecognitionUiState()) }
+    val coroutineScope = rememberCoroutineScope()
+    val settingsViewModel: SettingsViewModel = koinViewModel()
+    var settingsUiState by remember { mutableStateOf(com.example.kotlinapp.viewmodel.SettingsUiState()) }
+    LaunchedEffect(settingsViewModel) { settingsViewModel.uiState.collect { settingsUiState = it } }
     var photoBytes by remember { mutableStateOf<ByteArray?>(null) }
     var photoPreview by remember { mutableStateOf<ImageBitmap?>(null) }
     var sourceLabel by remember { mutableStateOf<String?>(null) }
     var showCameraDialog by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var result by remember { mutableStateOf<FaceRecognitionResult?>(null) }
-    var employeeMap by remember { mutableStateOf<Map<Long, Employee>>(emptyMap()) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    val settingsState = remember { SettingsState() }
-    val matchThreshold = settingsState.matchThreshold.value
+    val webcamService = remember { WebcamService() }
+    val matchThreshold = settingsUiState.matchThreshold
+
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
+    }
 
     if (showCameraDialog) {
-        PhotoCaptureDialog(onResult = { bytes ->
+        PhotoCaptureDialog(webcamService = webcamService, onResult = { bytes ->
             showCameraDialog = false
             if (bytes != null) {
                 photoBytes = bytes
@@ -74,8 +79,7 @@ fun FaceRecognitionContent() {
                 } catch (_: Exception) {
                     photoPreview = null
                 }
-                result = null
-                errorMessage = null
+                viewModel.clearError()
             }
         })
     }
@@ -114,8 +118,7 @@ fun FaceRecognitionContent() {
                             photoBytes = null
                             sourceLabel = null
                         }
-                        result = null
-                        errorMessage = null
+                        viewModel.clearError()
                     }
                 }
             }) {
@@ -131,42 +134,12 @@ fun FaceRecognitionContent() {
             Button(
                 onClick = {
                     photoBytes?.let { bytes ->
-                        coroutineScope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            result = null
-                            employeeMap = emptyMap()
-                            try {
-                                val recognitionResult = ServiceLocator.faceRecognitionRepository.recognizeFace(bytes)
-                                result = recognitionResult
-                                val matches = recognitionResult.results.flatMap { it.matches }
-                                if (matches.isNotEmpty()) {
-                                    val loaded = coroutineScope {
-                                        val deferred = matches.map { match ->
-                                            async {
-                                                try {
-                                                    val found = ServiceLocator.employeeRepository.searchEmployees(match.username)
-                                                    found.firstOrNull { it.id == match.id }
-                                                } catch (_: Exception) {
-                                                    null
-                                                }
-                                            }
-                                        }
-                                        deferred.awaitAll().filterNotNull().associateBy { it.id }
-                                    }
-                                    employeeMap = loaded
-                                }
-                            } catch (e: Exception) {
-                                errorMessage = mapException(e)
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        viewModel.recognize(bytes)
                     }
                 },
-                enabled = photoBytes != null && !isLoading
+                enabled = photoBytes != null && !uiState.isLoading
             ) {
-                if (isLoading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -182,7 +155,7 @@ fun FaceRecognitionContent() {
             Spacer(modifier = Modifier.height(16.dp))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    result?.let { res ->
+                    uiState.result?.let { res ->
                         if (res.results.isNotEmpty()) {
                             FaceBoundingBoxOverlay(
                                 imageBitmap = bitmap,
@@ -210,15 +183,15 @@ fun FaceRecognitionContent() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (isLoading) {
+        if (uiState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
         }
 
-        errorMessage?.let { msg ->
+        uiState.errorMessage?.let { msg ->
             Text(msg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
         }
 
-        result?.let { res ->
+        uiState.result?.let { res ->
             Spacer(modifier = Modifier.height(8.dp))
             Text("Обнаружено лиц: ${res.facesDetected}", style = MaterialTheme.typography.titleMedium)
 
@@ -236,7 +209,7 @@ fun FaceRecognitionContent() {
                                 Text("Совпадений не найдено", style = MaterialTheme.typography.bodySmall)
                             } else {
                                 faceResult.matches.forEach { match ->
-                                    val employee = employeeMap[match.id]
+                                    val employee = uiState.employeeMap[match.id]
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),

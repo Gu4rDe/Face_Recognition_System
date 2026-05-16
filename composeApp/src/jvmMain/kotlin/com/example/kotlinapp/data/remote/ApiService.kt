@@ -138,6 +138,35 @@ class ApiService(val apiClient: ApiClient) {
         }
     }
 
+    suspend fun createEmployeeWithPhotos(
+        employeeDto: EmployeeCreateDto,
+        photos: List<ByteArray>
+    ): EmployeeResponseDto {
+        return safeCall {
+            client.post("/api/v1/employees/register") {
+                addAuthToken(apiClient.token)
+                setBody(MultiPartFormDataContent(formData {
+                    append("employee_id", employeeDto.employee_id)
+                    append("username", employeeDto.username)
+                    append("email", employeeDto.email)
+                    employeeDto.phone?.let { append("phone", it) }
+                    employeeDto.department?.let { append("department", it) }
+                    employeeDto.position?.let { append("position", it) }
+                    employeeDto.location?.let { append("location", it) }
+                    employeeDto.hire_date?.let { append("hire_date", it) }
+                    append("is_active", employeeDto.is_active.toString())
+                    append("access_enabled", employeeDto.access_enabled.toString())
+                    photos.forEachIndexed { index, bytes ->
+                        append("photos", bytes, Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=photo_${index}.jpg")
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                        })
+                    }
+                }))
+            }.body()
+        }
+    }
+
     suspend fun listEmployees(skip: Int = 0, limit: Int = 100): List<EmployeeResponseDto> {
         return safeCall {
             client.get("/api/v1/employees") {

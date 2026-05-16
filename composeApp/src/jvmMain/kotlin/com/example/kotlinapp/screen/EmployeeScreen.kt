@@ -16,10 +16,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,54 +34,38 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.kotlinapp.ServiceLocator
 import com.example.kotlinapp.domain.model.Employee
 import com.example.kotlinapp.domain.model.EmployeeCreate
-import com.example.kotlinapp.util.mapException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
+import com.example.kotlinapp.service.WebcamService
 import com.example.kotlinapp.ui.dialogs.PhotoCaptureDialog
+import com.example.kotlinapp.viewmodel.EmployeeListUiState
+import com.example.kotlinapp.viewmodel.EmployeeViewModel
+import com.example.kotlinapp.viewmodel.PhotoRegistrationUiState
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun EmployeeContent() {
-    val coroutineScope = rememberCoroutineScope()
-    var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+fun EmployeeContent(
+    viewModel: EmployeeViewModel = koinViewModel()
+) {
+    var uiState by remember { mutableStateOf(EmployeeListUiState()) }
     var searchQuery by remember { mutableStateOf("") }
-    var isSearching by remember { mutableStateOf(false) }
-
     var showAddDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Employee?>(null) }
 
-    suspend fun loadEmployees() {
-        isLoading = true
-        error = null
-        try {
-            employees = ServiceLocator.employeeRepository.listEmployees()
-        } catch (e: Exception) {
-            error = mapException(e)
-        } finally {
-            isLoading = false
-        }
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
     }
-
-    LaunchedEffect(Unit) { loadEmployees() }
 
     LaunchedEffect(searchQuery) {
         delay(300)
         if (searchQuery.isBlank()) {
-            loadEmployees()
+            viewModel.loadEmployees()
         } else {
-            isSearching = true
-            try {
-                employees = ServiceLocator.employeeRepository.searchEmployees(searchQuery)
-            } catch (e: Exception) {
-                error = mapException(e)
-            } finally {
-                isSearching = false
-            }
+            viewModel.searchEmployees(searchQuery)
         }
     }
 
@@ -110,18 +96,18 @@ fun EmployeeContent() {
             }
         }
 
-        if (isLoading) {
+        if (uiState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 32.dp))
-        } else if (error != null) {
-            Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
-        } else if (employees.isEmpty()) {
+        } else if (uiState.error != null) {
+            Text(uiState.error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+        } else if (uiState.employees.isEmpty()) {
             Text("Сотрудники не найдены", style = MaterialTheme.typography.bodyLarge)
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(employees) { employee ->
+                items(uiState.employees) { employee ->
                     EmployeeCard(
                         employee = employee,
                         onDelete = { deleteTarget = employee }
@@ -133,11 +119,8 @@ fun EmployeeContent() {
 
     if (showAddDialog) {
         AddEmployeeDialog(
-            onDismiss = { showAddDialog = false },
-            onAdded = {
-                showAddDialog = false
-                coroutineScope.launch { loadEmployees() }
-            }
+            viewModel = viewModel,
+            onDismiss = { showAddDialog = false }
         )
     }
 
@@ -148,16 +131,8 @@ fun EmployeeContent() {
             text = { Text("Удалить сотрудника «${employee.username}»?") },
             confirmButton = {
                 TextButton(onClick = {
-                    coroutineScope.launch {
-                        try {
-                            ServiceLocator.employeeRepository.deleteEmployee(employee.id)
-                            deleteTarget = null
-                            loadEmployees()
-                        } catch (e: Exception) {
-                            error = mapException(e)
-                            deleteTarget = null
-                        }
-                    }
+                    viewModel.deleteEmployee(employee.id)
+                    deleteTarget = null
                 }) { Text("Удалить", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Отмена") } }
@@ -193,94 +168,131 @@ private fun EmployeeCard(employee: Employee, onDelete: () -> Unit) {
 }
 
 @Composable
-private fun AddEmployeeDialog(onDismiss: () -> Unit, onAdded: () -> Unit) {
+private fun AddEmployeeDialog(viewModel: EmployeeViewModel, onDismiss: () -> Unit) {
+    var uiState by remember { mutableStateOf(EmployeeListUiState()) }
+    var photoState by remember { mutableStateOf(PhotoRegistrationUiState()) }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var department by remember { mutableStateOf("") }
     var position by remember { mutableStateOf("") }
-    var photoBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showPhotoCapture by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
+    val webcamService = remember { WebcamService() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.uiState.collect { uiState = it }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.photoState.collect { photoState = it }
+    }
 
     if (showPhotoCapture) {
-        PhotoCaptureDialog(onResult = { bytes ->
+        PhotoCaptureDialog(webcamService = webcamService, onResult = { bytes ->
             showPhotoCapture = false
             if (bytes != null) {
-                photoBytes = bytes
+                viewModel.onPhotoCapture(bytes)
             }
         })
     } else {
         AlertDialog(
-            onDismissRequest = { if (!isLoading) onDismiss() },
+            onDismissRequest = { if (!uiState.isLoading && !photoState.isUploading) onDismiss() },
             title = { Text("Добавить сотрудника") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = username, onValueChange = { username = it; errorMessage = null }, label = { Text("Имя пользователя *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = email, onValueChange = { email = it; errorMessage = null }, label = { Text("Email *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Имя пользователя *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = department, onValueChange = { department = it }, label = { Text("Отдел") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = position, onValueChange = { position = it }, label = { Text("Должность") }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
-                    Button(
-                        onClick = { showPhotoCapture = true },
-                        modifier = Modifier.fillMaxWidth()
+                    HorizontalDivider()
+
+                    Text("Фотографии: ${photoState.capturedCount}/5 (минимум 3)", style = MaterialTheme.typography.titleSmall)
+
+                    ProgressIndicator(
+                        currentStep = photoState.currentStep,
+                        totalSteps = photoState.totalSteps,
+                        capturedCount = photoState.capturedCount
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(if (photoBytes != null) "Фото выбрано ✓" else "Создать фото")
+                        Button(
+                            onClick = { showPhotoCapture = true },
+                            modifier = Modifier.weight(1f),
+                            enabled = !photoState.isUploading
+                        ) {
+                            Text("Захватить")
+                        }
+                        if (photoState.isOptionalStep) {
+                            OutlinedButton(
+                                onClick = { viewModel.onSkipStep() },
+                                modifier = Modifier.weight(1f),
+                                enabled = !photoState.isUploading
+                            ) {
+                                Text("Пропустить")
+                            }
+                        }
                     }
 
-                    errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    photoState.errorMessage?.let { msg ->
+                        Text(msg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (username.isBlank() || email.isBlank()) {
-                            errorMessage = "Заполните обязательные поля: имя, email"
                             return@Button
                         }
-                        if (photoBytes == null) {
-                            errorMessage = "Создайте фотографию"
-                            return@Button
-                        }
-                        coroutineScope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            try {
-                                ServiceLocator.employeeRepository.createEmployee(
-                                    EmployeeCreate(
-                                        employeeId = "EMP-${System.currentTimeMillis()}",
-                                        username = username.trim(),
-                                        email = email.trim(),
-                                        phone = phone.ifBlank { null },
-                                        department = department.ifBlank { null },
-                                        position = position.ifBlank { null },
-                                        location = null,
-                                        hireDate = null,
-                                        isActive = true,
-                                        accessEnabled = true,
-                                        photoBytes = photoBytes!!
-                                    )
-                                )
-                                onAdded()
-                            } catch (e: Exception) {
-                                errorMessage = mapException(e)
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        viewModel.uploadPhotos(
+                            EmployeeCreate(
+                                employeeId = "EMP-${System.currentTimeMillis()}",
+                                username = username.trim(),
+                                email = email.trim(),
+                                phone = phone.ifBlank { null },
+                                department = department.ifBlank { null },
+                                position = position.ifBlank { null },
+                                location = null,
+                                hireDate = null,
+                                isActive = true,
+                                accessEnabled = true,
+                                photoBytes = byteArrayOf()
+                            ),
+                            onSuccess = { onDismiss() }
+                        )
                     },
-                    enabled = !isLoading
+                    enabled = photoState.canUpload && username.isNotBlank() && email.isNotBlank() && !uiState.isLoading
                 ) {
-                    if (isLoading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    else Text("Создать")
+                    if (photoState.isUploading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    else Text("Загрузить (${photoState.capturedCount} фото)")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { if (!isLoading) onDismiss() }, enabled = !isLoading) { Text("Отмена") }
+                TextButton(onClick = { if (!uiState.isLoading && !photoState.isUploading) onDismiss() }, enabled = !uiState.isLoading && !photoState.isUploading) { Text("Отмена") }
             }
+        )
+    }
+}
+
+@Composable
+private fun ProgressIndicator(currentStep: Int, totalSteps: Int, capturedCount: Int) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        LinearProgressIndicator(
+            progress = { (currentStep + 1).toFloat() / totalSteps },
+            modifier = Modifier.fillMaxWidth().height(8.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Шаг ${currentStep + 1} из $totalSteps",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

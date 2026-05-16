@@ -11,6 +11,7 @@ kotestRunnerJunit5 = "5.9.1"
 mockk = "1.13.12"
 kotlin = "2.3.20"
 kotlinx-coroutines = "1.10.2"
+kotlinx-coroutines-test = "1.10.2"
 kotlinx-serialization-json = "1.7.3"
 ktor = "3.0.3"
 slf4j = "2.0.16"
@@ -33,6 +34,7 @@ compose-navigation = { module = "org.jetbrains.androidx.navigation:navigation-co
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
