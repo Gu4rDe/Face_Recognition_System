@@ -48,6 +48,16 @@ import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
+private fun similarityLabel(similarity: Double): String {
+    return when {
+        similarity >= 0.8 -> "Отличное"
+        similarity >= 0.6 -> "Хорошее"
+        similarity >= 0.4 -> "Среднее"
+        similarity >= 0.3 -> "Низкое"
+        else -> "Очень низкое"
+    }
+}
+
 @Composable
 fun FaceRecognitionContent(
     viewModel: FaceRecognitionViewModel = koinViewModel()
@@ -221,7 +231,7 @@ fun FaceRecognitionContent(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            "Сходство: ${(match.similarity * 100).toInt()}%",
+                                            "Сходство: ${similarityLabel(match.similarity)}",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = MaterialTheme.colorScheme.primary,
                                             fontWeight = FontWeight.Bold
