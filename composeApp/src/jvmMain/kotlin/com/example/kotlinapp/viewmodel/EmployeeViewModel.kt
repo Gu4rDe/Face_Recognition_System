@@ -57,18 +57,6 @@ class EmployeeViewModel(
         }
     }
 
-    fun createEmployee(create: EmployeeCreate, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                employeeRepository.createEmployee(create)
-                onSuccess()
-                loadEmployees()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = mapException(e)) }
-            }
-        }
-    }
-
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }

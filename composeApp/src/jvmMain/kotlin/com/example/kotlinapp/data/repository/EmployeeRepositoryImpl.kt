@@ -13,11 +13,6 @@ class EmployeeRepositoryImpl(
     private val apiService: ApiService
 ) : EmployeeRepository {
 
-    override suspend fun createEmployee(create: EmployeeCreate): Employee {
-        val dto = create.toDto()
-        return apiService.createEmployee(dto, create.photoBytes).toDomain()
-    }
-
     override suspend fun registerWithPhotos(create: EmployeeCreate, photos: List<ByteArray>): Employee {
         val dto = create.toDto()
         return apiService.createEmployeeWithPhotos(dto, photos).toDomain()

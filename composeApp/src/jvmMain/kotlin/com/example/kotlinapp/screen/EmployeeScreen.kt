@@ -202,11 +202,11 @@ private fun AddEmployeeDialog(viewModel: EmployeeViewModel, onDismiss: () -> Uni
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Имя пользователя *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = department, onValueChange = { department = it }, label = { Text("Отдел") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = position, onValueChange = { position = it }, label = { Text("Должность") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Имя пользователя *") }, placeholder = { Text("Иванов Иван Иванович") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email *") }, placeholder = { Text("ivanov@company.com") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") }, placeholder = { Text("+7 999 123-45-67") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = department, onValueChange = { department = it }, label = { Text("Отдел") }, placeholder = { Text("Отдел разработки") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = position, onValueChange = { position = it }, label = { Text("Должность") }, placeholder = { Text("Инженер-программист") }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
                     HorizontalDivider()
 

@@ -113,21 +113,25 @@ class ServerCommunicationTest : FunSpec({
         runBlocking {
             authRepo.login(AdminLogin("test", "qq12345"))
 
-            val employee = employeeRepo.createEmployee(
-                EmployeeCreate(
-                    employeeId = "EMP-${System.currentTimeMillis()}",
-                    username = "Test Employee",
-                    email = "emp_${System.currentTimeMillis()}@test.com",
-                    phone = "+1234567890",
-                    department = "IT",
-                    position = "Developer",
-                    location = "Office",
-                    hireDate = "2024-01-15",
-                    isActive = true,
-                    accessEnabled = true,
-                    photoBytes = byteArrayOf()
-                )
+            val photos = listOf(
+                java.util.Random().nextBytes(1024),
+                java.util.Random().nextBytes(1024),
+                java.util.Random().nextBytes(1024)
             )
+            val create = EmployeeCreate(
+                employeeId = "EMP-${System.currentTimeMillis()}",
+                username = "Test Employee",
+                email = "emp_${System.currentTimeMillis()}@test.com",
+                phone = "+1234567890",
+                department = "IT",
+                position = "Developer",
+                location = "Office",
+                hireDate = "2024-01-15",
+                isActive = true,
+                accessEnabled = true,
+                photoBytes = byteArrayOf()
+            )
+            val employee = employeeRepo.registerWithPhotos(create, photos)
             println("Created employee: id=${employee.id}, name=${employee.username}")
 
             val list = employeeRepo.listEmployees()
