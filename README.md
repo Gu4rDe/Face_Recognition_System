@@ -73,6 +73,8 @@ composeApp/src/jvmMain/kotlin/com/example/kotlinapp
 ├── main.kt                    # Entry point (Window)
 ├── App.kt                     # Root composable
 ├── ServiceLocator.kt          # Singleton DI container
+├── api/
+│   └── ApiService.kt          # Demo client (dummyjson.com)
 ├── domain/
 │   ├── model/                  # Business data classes
 │   └── repository/             # Repository interfaces
@@ -83,7 +85,10 @@ composeApp/src/jvmMain/kotlin/com/example/kotlinapp
 │   ├── remote/                 # Network layer (ApiClient, ApiService)
 │   └── repository/             # Repository implementations
 ├── screen/                     # Voyager Screens
-├── presentation/               # UI state management
+├── presentation/
+│   └── SettingsState.kt        # Reactive UI settings state
+├── service/
+│   └── WebcamService.kt        # Webcam capture wrapper
 ├── ui/                         # Reusable UI components
 │   ├── buttons/
 │   ├── textfields/
@@ -166,11 +171,11 @@ The application provides an in-app settings overlay for:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Theme | Light / Dark mode | System default |
+| Theme | Light / Dark mode | Light |
 | API Base URL | Backend server URL | `http://localhost:8000` |
-| Match Threshold | Minimum similarity for face match | — |
-| Camera Resolution | Webcam capture resolution | — |
-| FPS | Camera frames per second | — |
+| Match Threshold | Minimum similarity for face match | 0.6 |
+| Camera Resolution | Webcam capture resolution | 640x480 |
+| FPS | Camera frames per second | 30 |
 
 Settings are persisted via `java.util.prefs.Preferences`.
 
