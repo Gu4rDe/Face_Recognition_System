@@ -25,8 +25,6 @@ class SettingsState {
 
     val isLoadingSettings = mutableStateOf(false)
 
-    val matchThreshold = mutableStateOf(0.6f)
-
     val cameraResolution = mutableStateOf("640x480")
 
     val cameraFps = mutableStateOf(30)
@@ -49,7 +47,6 @@ class SettingsState {
         loadError.value = null
         try {
             val settings = ServiceLocator.settingsRepository.getSettings()
-            matchThreshold.value = settings.matchThreshold.toFloat()
             cameraResolution.value = settings.cameraResolution
             cameraFps.value = settings.cameraFps
         } catch (e: Exception) {
@@ -66,7 +63,6 @@ class SettingsState {
             try {
                 ServiceLocator.settingsRepository.updateSettings(
                     AppSettingsUpdate(
-                        matchThreshold = matchThreshold.value.toDouble(),
                         cameraResolution = cameraResolution.value,
                         cameraFps = cameraFps.value
                     )

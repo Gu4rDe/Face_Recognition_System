@@ -16,7 +16,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -99,35 +98,6 @@ private fun SettingsDialog(settingsState: SettingsState) {
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Column {
-                    if (settingsState.loadError.value != null) {
-                        Text(
-                            settingsState.loadError.value ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    if (settingsState.saveError.value != null) {
-                        Text(
-                            settingsState.saveError.value ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    Text(
-                        "Порог совпадения: ${(settingsState.matchThreshold.value * 100).toInt()}%",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = settingsState.matchThreshold.value,
-                        onValueChange = { settingsState.matchThreshold.value = it },
-                        valueRange = 0f..1f,
-                        steps = 98
-                    )
-                }
 
                 OutlinedTextField(
                     value = settingsState.cameraResolution.value,

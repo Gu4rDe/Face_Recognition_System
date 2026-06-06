@@ -68,7 +68,7 @@ class ServerCommunicationTest {
         println("[7] Search results: ${search.size}")
 
         val settings = settingsRepo.getSettings()
-        println("[8] Settings: theme=${settings.theme}, matchThreshold=${settings.matchThreshold}")
+        println("[8] Settings: theme=${settings.theme}")
 
         val savedToken = authRepo.getToken()
         println("[9] Saved token: ${savedToken?.take(20)}...")
@@ -142,9 +142,9 @@ class ServerCommunicationTest {
         println("Settings: theme=${settings.theme}, fullscreen=${settings.fullscreen}")
 
         val updated = settingsRepo.updateSettings(
-            AppSettingsUpdate(matchThreshold = settings.matchThreshold)
+            AppSettingsUpdate(cameraResolution = settings.cameraResolution)
         )
-        println("Updated settings: matchThreshold=${updated.matchThreshold}")
+        println("Updated settings: cameraResolution=${updated.cameraResolution}")
 
         settingsRepo.createBackup()
         println("Backup created")

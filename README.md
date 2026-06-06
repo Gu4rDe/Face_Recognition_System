@@ -25,10 +25,10 @@ Desktop client for the **Miit_FaceDetect** face recognition system. Built with *
 
 ## Features
 
-- **Admin Authentication** — login, registration with invite codes, JWT Bearer token management
+- **Admin Authentication** — login, registration with invite codes, password recovery, JWT Bearer token management
 - **Employee Management** — CRUD operations, search, photo capture via webcam, employee statistics
 - **Face Recognition** — image upload or webcam capture, real-time bounding box overlay with color-coded confidence levels, match results with employee data enrichment
-- **Settings** — theme switching (light/dark), configurable API base URL, face recognition parameters (match threshold, camera resolution, FPS), persistent storage
+- **Settings** — theme switching (light/dark), configurable API base URL, face recognition parameters (camera resolution, FPS), persistent storage
 - **Navigation** — Voyager-based screen navigation with composable section switching
 
 ## Tech Stack
@@ -175,7 +175,6 @@ The application provides an in-app settings overlay for:
 |---------|-------------|---------|
 | Theme | Light / Dark mode | Light |
 | API Base URL | Backend server URL | `http://localhost:8000` |
-| Match Threshold | Minimum similarity for face match | 0.6 |
 | Camera Resolution | Webcam capture resolution | 640x480 |
 | FPS | Camera frames per second | 30 |
 

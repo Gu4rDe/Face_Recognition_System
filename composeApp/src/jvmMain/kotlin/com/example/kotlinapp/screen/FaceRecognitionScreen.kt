@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.example.kotlinapp.ServiceLocator
 import com.example.kotlinapp.domain.model.Employee
 import com.example.kotlinapp.domain.model.FaceRecognitionResult
-import com.example.kotlinapp.presentation.SettingsState
 import com.example.kotlinapp.ui.components.FaceBoundingBoxOverlay
 import com.example.kotlinapp.ui.dialogs.PhotoCaptureDialog
 import com.example.kotlinapp.util.mapException
@@ -60,8 +59,6 @@ fun FaceRecognitionContent() {
     var employeeMap by remember { mutableStateOf<Map<Long, Employee>>(emptyMap()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    val settingsState = remember { SettingsState() }
-    val matchThreshold = settingsState.matchThreshold.value
 
     if (showCameraDialog) {
         PhotoCaptureDialog(onResult = { bytes ->
@@ -187,7 +184,6 @@ fun FaceRecognitionContent() {
                             FaceBoundingBoxOverlay(
                                 imageBitmap = bitmap,
                                 faceResults = res.results,
-                                matchThreshold = matchThreshold,
                                 modifier = Modifier.height(300.dp).fillMaxWidth()
                             )
                         } else {
