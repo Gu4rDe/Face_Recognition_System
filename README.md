@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
+English | [Русский](README.ru.md)
+
 Desktop client for the **Miit_FaceDetect** face recognition system. Built with **Compose Multiplatform** and **Material3**, providing a modern UI for admin authentication, employee management, face recognition, and application settings.
 
 ## Table of Contents

@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
+[English](README.md) | Русский
+
 Десктопный клиент для системы распознавания лиц **Miit_FaceDetect**. Построен на **Compose Multiplatform** и **Material3**, предоставляет современный UI для аутентификации администратора, управления сотрудниками, распознавания лиц и настроек приложения.
 
 ## Содержание
