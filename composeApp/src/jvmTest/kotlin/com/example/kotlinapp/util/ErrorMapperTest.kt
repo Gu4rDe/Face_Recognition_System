@@ -19,7 +19,7 @@ class ErrorMapperTest : FunSpec({
 
     test("403 returns forbidden message") {
         val result = mapException(ApiException(403, "detail\" : \"Access denied\""))
-        result shouldBe "Access denied\nПроверьте, что ваш код приглашения действителен и не истёк"
+        result shouldBe "Доступ запрещён\nПроверьте, что ваш код приглашения действителен и не истёк"
     }
 
     test("404 returns not found message") {

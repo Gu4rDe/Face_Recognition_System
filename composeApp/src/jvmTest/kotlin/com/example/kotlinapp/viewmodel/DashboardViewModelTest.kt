@@ -3,15 +3,17 @@ package com.example.kotlinapp.viewmodel
 import com.example.kotlinapp.data.remote.ApiService
 import com.example.kotlinapp.domain.model.EmployeeStats
 import com.example.kotlinapp.domain.repository.EmployeeRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class DashboardViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     test("loadStats fetches and sets stats") {
         runTest {
@@ -22,7 +24,7 @@ class DashboardViewModelTest : FunSpec({
             coEvery { apiService.healthCheck() } returns true
 
             val viewModel = DashboardViewModel(employeeRepository, apiService)
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.stats shouldBe expectedStats
             viewModel.uiState.value.isLoadingStats shouldBe false
@@ -37,7 +39,7 @@ class DashboardViewModelTest : FunSpec({
             coEvery { apiService.healthCheck() } returns true
 
             val viewModel = DashboardViewModel(employeeRepository, apiService)
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.serverStatus shouldBe "Подключено"
             viewModel.uiState.value.isLoadingServer shouldBe false
@@ -52,7 +54,7 @@ class DashboardViewModelTest : FunSpec({
             coEvery { apiService.healthCheck() } throws RuntimeException("Connection refused")
 
             val viewModel = DashboardViewModel(employeeRepository, apiService)
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.serverStatus shouldBe "Не подключено"
         }
@@ -66,7 +68,7 @@ class DashboardViewModelTest : FunSpec({
             coEvery { apiService.healthCheck() } returns true
 
             val viewModel = DashboardViewModel(employeeRepository, apiService)
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.statsError shouldNotBe null
         }

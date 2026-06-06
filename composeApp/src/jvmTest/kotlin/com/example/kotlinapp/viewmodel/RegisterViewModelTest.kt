@@ -2,15 +2,17 @@ package com.example.kotlinapp.viewmodel
 
 import com.example.kotlinapp.domain.model.Admin
 import com.example.kotlinapp.domain.repository.AuthRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class RegisterViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     test("register success sets isSuccess to true") {
         runTest {
@@ -19,7 +21,7 @@ class RegisterViewModelTest : FunSpec({
 
             val viewModel = RegisterViewModel(authRepository)
             viewModel.register("admin", "admin@test.com", "password123", "INVITE001")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.isSuccess shouldBe true
             viewModel.uiState.value.isLoading shouldBe false
@@ -34,7 +36,7 @@ class RegisterViewModelTest : FunSpec({
 
             val viewModel = RegisterViewModel(authRepository)
             viewModel.register("admin", "admin@test.com", "password123", "INVALID")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.isSuccess shouldBe false
             viewModel.uiState.value.errorMessage shouldNotBe null
@@ -48,7 +50,7 @@ class RegisterViewModelTest : FunSpec({
 
             val viewModel = RegisterViewModel(authRepository)
             viewModel.register("existing", "admin@test.com", "password123", "INVITE001")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.isSuccess shouldBe false
             viewModel.uiState.value.errorMessage shouldNotBe null

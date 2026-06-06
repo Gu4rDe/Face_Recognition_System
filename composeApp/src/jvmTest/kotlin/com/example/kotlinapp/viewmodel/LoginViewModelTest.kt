@@ -2,6 +2,7 @@ package com.example.kotlinapp.viewmodel
 
 import com.example.kotlinapp.domain.model.AuthResult
 import com.example.kotlinapp.domain.repository.AuthRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -9,10 +10,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class LoginViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     test("login success sets isSuccess to true") {
         runTest {
@@ -21,7 +23,7 @@ class LoginViewModelTest : FunSpec({
 
             val viewModel = LoginViewModel(authRepository)
             viewModel.login("admin", "password123")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.isSuccess shouldBe true
             viewModel.uiState.value.isLoading shouldBe false
@@ -37,7 +39,7 @@ class LoginViewModelTest : FunSpec({
 
             val viewModel = LoginViewModel(authRepository)
             viewModel.login("admin", "wrong")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.isSuccess shouldBe false
             viewModel.uiState.value.isLoading shouldBe false

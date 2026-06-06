@@ -7,16 +7,18 @@ import com.example.kotlinapp.domain.model.FaceRecognitionResult
 import com.example.kotlinapp.domain.model.FaceResult
 import com.example.kotlinapp.domain.repository.EmployeeRepository
 import com.example.kotlinapp.domain.repository.FaceRecognitionRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class FaceRecognitionViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     test("recognize sets result and employeeMap") {
         runTest {
@@ -36,7 +38,7 @@ class FaceRecognitionViewModelTest : FunSpec({
 
             val viewModel = FaceRecognitionViewModel(faceRecognitionRepository, employeeRepository)
             viewModel.recognize(byteArrayOf(1, 2, 3))
-            delay(200)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.result shouldNotBe null
             viewModel.uiState.value.isLoading shouldBe false
@@ -52,7 +54,7 @@ class FaceRecognitionViewModelTest : FunSpec({
 
             val viewModel = FaceRecognitionViewModel(faceRecognitionRepository, employeeRepository)
             viewModel.recognize(byteArrayOf(1, 2, 3))
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.errorMessage shouldNotBe null
             viewModel.uiState.value.isLoading shouldBe false
@@ -71,7 +73,7 @@ class FaceRecognitionViewModelTest : FunSpec({
 
             val viewModel = FaceRecognitionViewModel(faceRecognitionRepository, employeeRepository)
             viewModel.recognize(byteArrayOf(1, 2, 3))
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.employeeMap.shouldBeEmpty()
         }

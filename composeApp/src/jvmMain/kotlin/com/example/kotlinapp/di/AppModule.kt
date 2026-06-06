@@ -49,5 +49,5 @@ val viewModelModule: Module = module {
     viewModel { DashboardViewModel(get(), get()) }
     viewModel { EmployeeViewModel(get()) }
     viewModel { FaceRecognitionViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get()) }
 }

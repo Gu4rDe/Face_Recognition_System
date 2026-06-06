@@ -1,15 +1,17 @@
 package com.example.kotlinapp.viewmodel
 
 import com.example.kotlinapp.domain.repository.AuthRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class PasswordRecoveryViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     test("reset password success sets successMessage") {
         runTest {
@@ -18,7 +20,7 @@ class PasswordRecoveryViewModelTest : FunSpec({
 
             val viewModel = PasswordRecoveryViewModel(authRepository)
             viewModel.resetPassword("admin", "INVITE001", "newpassword123")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.successMessage shouldNotBe null
             viewModel.uiState.value.isLoading shouldBe false
@@ -33,7 +35,7 @@ class PasswordRecoveryViewModelTest : FunSpec({
 
             val viewModel = PasswordRecoveryViewModel(authRepository)
             viewModel.resetPassword("admin", "INVALID", "newpassword123")
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.successMessage shouldBe null
             viewModel.uiState.value.errorMessage shouldNotBe null

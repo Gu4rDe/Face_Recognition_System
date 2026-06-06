@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.kotlinapp.data.local.LocalSettingsStorage
 import com.example.kotlinapp.data.remote.ApiService
 import com.example.kotlinapp.domain.model.AppSettingsUpdate
+import com.example.kotlinapp.domain.repository.AuthRepository
 import com.example.kotlinapp.domain.repository.SettingsRepository
 import com.example.kotlinapp.util.mapException
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -43,6 +45,10 @@ class SettingsViewModel(
 
     fun loadSettings() {
         viewModelScope.launch {
+            if (authRepository.getToken() == null) {
+                _uiState.update { it.copy(isLoadingSettings = false) }
+                return@launch
+            }
             _uiState.update { it.copy(isLoadingSettings = true, loadError = null) }
             try {
                 val settings = settingsRepository.getSettings()
@@ -59,10 +65,9 @@ class SettingsViewModel(
         }
     }
 
-    fun applySettings(onSuccess: () -> Unit = {}) {
+    fun saveAndCheckServer() {
         val trimmedUrl = _uiState.value.apiUrl.trim().removeSuffix("/")
         _uiState.update { it.copy(apiUrl = trimmedUrl, isSavingSettings = true, saveError = null) }
-
         LocalSettingsStorage.setApiUrl(trimmedUrl)
 
         viewModelScope.launch {
@@ -74,7 +79,7 @@ class SettingsViewModel(
                     )
                 )
                 _uiState.update { it.copy(isSavingSettings = false) }
-                onSuccess()
+                checkServerConnection()
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSavingSettings = false, saveError = "Ошибка сохранения: ${mapException(e)}") }
             }

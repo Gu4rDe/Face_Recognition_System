@@ -3,7 +3,9 @@ package com.example.kotlinapp.viewmodel
 import com.example.kotlinapp.data.local.LocalSettingsStorage
 import com.example.kotlinapp.data.remote.ApiService
 import com.example.kotlinapp.domain.model.AppSettings
+import com.example.kotlinapp.domain.repository.AuthRepository
 import com.example.kotlinapp.domain.repository.SettingsRepository
+import com.example.kotlinapp.util.MainDispatcherRule
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
@@ -13,10 +15,11 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 
 class SettingsViewModelTest : FunSpec({
+    val mainDispatcherRule = MainDispatcherRule()
+    listener(mainDispatcherRule)
 
     fun testSettings() = AppSettings(
         id = 1, theme = "light", fullscreen = false,
@@ -36,9 +39,10 @@ class SettingsViewModelTest : FunSpec({
 
             val settingsRepository = mockk<SettingsRepository>()
             val apiService = mockk<ApiService>()
-            coEvery { settingsRepository.getSettings() } returns testSettings()
+            val authRepository = mockk<AuthRepository>()
+            every { authRepository.getToken() } returns "test-token"
 
-            val viewModel = SettingsViewModel(settingsRepository, apiService)
+            val viewModel = SettingsViewModel(settingsRepository, apiService, authRepository)
 
             viewModel.uiState.value.isDarkTheme shouldBe false
             viewModel.toggleTheme()
@@ -49,7 +53,7 @@ class SettingsViewModelTest : FunSpec({
         }
     }
 
-    test("loadSettings fetches and sets values") {
+    test("loadSettings fetches and sets values when authenticated") {
         runTest {
             mockkObject(LocalSettingsStorage)
             every { LocalSettingsStorage.getTheme() } returns "light"
@@ -57,12 +61,14 @@ class SettingsViewModelTest : FunSpec({
 
             val settingsRepository = mockk<SettingsRepository>()
             val apiService = mockk<ApiService>()
+            val authRepository = mockk<AuthRepository>()
+            every { authRepository.getToken() } returns "test-token"
             val settings = testSettings().copy(cameraResolution = "1280x720", cameraFps = 60)
             coEvery { settingsRepository.getSettings() } returns settings
 
-            val viewModel = SettingsViewModel(settingsRepository, apiService)
+            val viewModel = SettingsViewModel(settingsRepository, apiService, authRepository)
             viewModel.loadSettings()
-            delay(100)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             viewModel.uiState.value.cameraResolution shouldBe "1280x720"
             viewModel.uiState.value.cameraFps shouldBe 60
@@ -70,7 +76,7 @@ class SettingsViewModelTest : FunSpec({
         }
     }
 
-    test("applySettings calls repository") {
+    test("loadSettings skips API call when not authenticated") {
         runTest {
             mockkObject(LocalSettingsStorage)
             every { LocalSettingsStorage.getTheme() } returns "light"
@@ -78,12 +84,37 @@ class SettingsViewModelTest : FunSpec({
 
             val settingsRepository = mockk<SettingsRepository>()
             val apiService = mockk<ApiService>()
+            val authRepository = mockk<AuthRepository>()
+            every { authRepository.getToken() } returns null
+
+            val viewModel = SettingsViewModel(settingsRepository, apiService, authRepository)
+            viewModel.loadSettings()
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+
+            viewModel.uiState.value.isLoadingSettings shouldBe false
+            viewModel.uiState.value.loadError shouldBe null
+            unmockkObject(LocalSettingsStorage)
+        }
+    }
+
+    test("saveAndCheckServer calls repository") {
+        runTest {
+            mockkObject(LocalSettingsStorage)
+            every { LocalSettingsStorage.getTheme() } returns "light"
+            every { LocalSettingsStorage.getApiUrl() } returns "http://localhost:8000"
+            every { LocalSettingsStorage.setApiUrl(any()) } returns Unit
+
+            val settingsRepository = mockk<SettingsRepository>()
+            val apiService = mockk<ApiService>()
+            val authRepository = mockk<AuthRepository>()
+            every { authRepository.getToken() } returns "test-token"
             coEvery { settingsRepository.getSettings() } returns testSettings()
             coEvery { settingsRepository.updateSettings(any()) } returns testSettings()
+            coEvery { apiService.healthCheck() } returns true
 
-            val viewModel = SettingsViewModel(settingsRepository, apiService)
-            viewModel.applySettings()
-            delay(100)
+            val viewModel = SettingsViewModel(settingsRepository, apiService, authRepository)
+            viewModel.saveAndCheckServer()
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             coVerify { settingsRepository.updateSettings(any()) }
             unmockkObject(LocalSettingsStorage)

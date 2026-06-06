@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.kotlinapp.ui.icons.SettingsIcon
 import com.example.kotlinapp.viewmodel.SettingsUiState
 import com.example.kotlinapp.viewmodel.SettingsViewModel
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -77,11 +78,14 @@ private fun SettingsDialog(viewModel: SettingsViewModel) {
     LaunchedEffect(Unit) {
         viewModel.checkServerConnection()
         viewModel.loadSettings()
+        while (true) {
+            delay(30_000)
+            viewModel.checkServerConnection()
+        }
     }
 
     AlertDialog(
         onDismissRequest = {
-            viewModel.applySettings()
             viewModel.setShowSettings(false)
         },
         title = { Text("Настройки") },
@@ -116,25 +120,6 @@ private fun SettingsDialog(viewModel: SettingsViewModel) {
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Column {
-                    if (uiState.loadError != null) {
-                        Text(
-                            uiState.loadError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    if (uiState.saveError != null) {
-                        Text(
-                            uiState.saveError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                }
 
                 OutlinedTextField(
                     value = uiState.cameraResolution,
@@ -193,11 +178,21 @@ private fun SettingsDialog(viewModel: SettingsViewModel) {
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                viewModel.applySettings()
-                viewModel.setShowSettings(false)
-            }) {
-                Text("Закрыть")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    viewModel.saveAndCheckServer()
+                }) {
+                    if (uiState.isSavingSettings) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Сохранить")
+                    }
+                }
+                TextButton(onClick = {
+                    viewModel.setShowSettings(false)
+                }) {
+                    Text("Закрыть")
+                }
             }
         }
     )
