@@ -13,9 +13,9 @@ class EmployeeRepositoryImpl(
     private val apiService: ApiService
 ) : EmployeeRepository {
 
-    override suspend fun createEmployee(create: EmployeeCreate): Employee {
+    override suspend fun registerWithPhotos(create: EmployeeCreate, photos: List<ByteArray>): Employee {
         val dto = create.toDto()
-        return apiService.createEmployee(dto, create.photoBytes).toDomain()
+        return apiService.createEmployeeWithPhotos(dto, photos).toDomain()
     }
 
     override suspend fun listEmployees(skip: Int, limit: Int): List<Employee> {

@@ -21,6 +21,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kotlinapp.domain.model.FaceResult
 
+private fun similarityLabel(similarity: Double): String {
+    return when {
+        similarity >= 0.8 -> "Отличное"
+        similarity >= 0.6 -> "Хорошее"
+        similarity >= 0.4 -> "Среднее"
+        similarity >= 0.3 -> "Низкое"
+        else -> "Очень низкое"
+    }
+}
+
 private data class BestMatchInfo(
     val similarity: Double?,
     val label: String?
@@ -30,7 +40,7 @@ private fun bestMatchInfo(faceResult: FaceResult): BestMatchInfo {
     val best = faceResult.matches.maxByOrNull { it.similarity }
     return BestMatchInfo(
         similarity = best?.similarity,
-        label = best?.let { "${it.username} (${(it.similarity * 100).toInt()}%)" }
+        label = best?.let { "${it.username} — ${similarityLabel(it.similarity)}" }
     )
 }
 
@@ -69,9 +79,9 @@ private fun computeFitTransform(
 fun FaceBoundingBoxOverlay(
     imageBitmap: ImageBitmap,
     faceResults: List<FaceResult>,
-    modifier: Modifier = Modifier,
-    matchThreshold: Float = 0.8f
+    modifier: Modifier = Modifier
 ) {
+    val matchThreshold = 0.8f
     val textMeasurer = rememberTextMeasurer()
     val textStyle = TextStyle(fontSize = 12.sp, color = Color.White)
 

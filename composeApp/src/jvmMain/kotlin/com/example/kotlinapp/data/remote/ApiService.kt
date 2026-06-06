@@ -111,9 +111,9 @@ class ApiService(val apiClient: ApiClient) {
     }
 
     // Employees
-    suspend fun createEmployee(
+    suspend fun createEmployeeWithPhotos(
         employeeDto: EmployeeCreateDto,
-        imageBytes: ByteArray
+        photos: List<ByteArray>
     ): EmployeeResponseDto {
         return safeCall {
             client.post("/api/v1/employees/register") {
@@ -129,10 +129,12 @@ class ApiService(val apiClient: ApiClient) {
                     employeeDto.hire_date?.let { append("hire_date", it) }
                     append("is_active", employeeDto.is_active.toString())
                     append("access_enabled", employeeDto.access_enabled.toString())
-                    append("file", imageBytes, Headers.build {
-                        append(HttpHeaders.ContentDisposition, "filename=photo.jpg")
-                        append(HttpHeaders.ContentType, "image/jpeg")
-                    })
+                    photos.forEachIndexed { index, bytes ->
+                        append("files", bytes, Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=photo_${index}.jpg")
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                        })
+                    }
                 }))
             }.body()
         }

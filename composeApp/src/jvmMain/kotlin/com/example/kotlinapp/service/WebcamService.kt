@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
-object WebcamService {
+class WebcamService {
 
     private var webcam: Webcam? = null
     private var isOpen = false
