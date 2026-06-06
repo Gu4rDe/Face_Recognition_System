@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import io.ktor.client.plugins.HttpTimeout
 
 class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
 
@@ -36,6 +37,11 @@ class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
 
     private fun buildClient(): HttpClient = HttpClient(CIO) {
         expectSuccess = true
+        install(HttpTimeout) {
+            connectTimeoutMillis = 5_000
+            requestTimeoutMillis = 10_000
+            socketTimeoutMillis = 10_000
+        }
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -48,9 +54,7 @@ class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
             level = LogLevel.INFO
         }
         defaultRequest {
-            // Use takeFrom to safely merge base URL with relative paths
             url.takeFrom(URLBuilder(baseUrl).apply {
-                // Ensure base path is preserved if present in baseUrl
             })
         }
     }

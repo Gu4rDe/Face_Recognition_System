@@ -19,6 +19,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 
 class ApiService(val apiClient: ApiClient) {
 
@@ -229,15 +230,15 @@ class ApiService(val apiClient: ApiClient) {
 
     // Health
     suspend fun healthCheck(): Boolean {
-        return try {
-            val response = client.get("/health")
-            val status = response.status.value in 200..299
-            response.bodyAsText()
-            status
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            false
-        }
+        return withTimeoutOrNull(5_000L) {
+            try {
+                val response = client.get("/health")
+                val status = response.status.value in 200..299
+                response.bodyAsText()
+                status
+            } catch (_: Exception) {
+                false
+            }
+        } ?: false
     }
 }

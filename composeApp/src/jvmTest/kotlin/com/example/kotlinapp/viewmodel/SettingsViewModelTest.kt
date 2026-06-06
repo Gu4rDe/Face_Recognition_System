@@ -1,6 +1,7 @@
 package com.example.kotlinapp.viewmodel
 
 import com.example.kotlinapp.data.local.LocalSettingsStorage
+import com.example.kotlinapp.data.remote.ApiClient
 import com.example.kotlinapp.data.remote.ApiService
 import com.example.kotlinapp.domain.model.AppSettings
 import com.example.kotlinapp.domain.repository.AuthRepository
@@ -97,18 +98,19 @@ class SettingsViewModelTest : FunSpec({
         }
     }
 
-    test("saveAndCheckServer calls repository") {
+    test("saveAndCheckServer calls repository when authenticated") {
         runTest {
             mockkObject(LocalSettingsStorage)
             every { LocalSettingsStorage.getTheme() } returns "light"
             every { LocalSettingsStorage.getApiUrl() } returns "http://localhost:8000"
             every { LocalSettingsStorage.setApiUrl(any()) } returns Unit
 
+            val apiClient = mockk<ApiClient>(relaxed = true)
             val settingsRepository = mockk<SettingsRepository>()
             val apiService = mockk<ApiService>()
             val authRepository = mockk<AuthRepository>()
+            every { apiService.apiClient } returns apiClient
             every { authRepository.getToken() } returns "test-token"
-            coEvery { settingsRepository.getSettings() } returns testSettings()
             coEvery { settingsRepository.updateSettings(any()) } returns testSettings()
             coEvery { apiService.healthCheck() } returns true
 
@@ -117,6 +119,31 @@ class SettingsViewModelTest : FunSpec({
             mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
             coVerify { settingsRepository.updateSettings(any()) }
+            unmockkObject(LocalSettingsStorage)
+        }
+    }
+
+    test("saveAndCheckServer skips repository when not authenticated") {
+        runTest {
+            mockkObject(LocalSettingsStorage)
+            every { LocalSettingsStorage.getTheme() } returns "light"
+            every { LocalSettingsStorage.getApiUrl() } returns "http://localhost:8000"
+            every { LocalSettingsStorage.setApiUrl(any()) } returns Unit
+
+            val apiClient = mockk<ApiClient>(relaxed = true)
+            val settingsRepository = mockk<SettingsRepository>()
+            val apiService = mockk<ApiService>()
+            val authRepository = mockk<AuthRepository>()
+            every { apiService.apiClient } returns apiClient
+            every { authRepository.getToken() } returns null
+            coEvery { apiService.healthCheck() } returns true
+
+            val viewModel = SettingsViewModel(settingsRepository, apiService, authRepository)
+            viewModel.saveAndCheckServer()
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+
+            coVerify(exactly = 0) { settingsRepository.updateSettings(any()) }
+            verify { apiClient.baseUrl = any() }
             unmockkObject(LocalSettingsStorage)
         }
     }

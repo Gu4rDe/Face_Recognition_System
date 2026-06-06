@@ -69,15 +69,18 @@ class SettingsViewModel(
         val trimmedUrl = _uiState.value.apiUrl.trim().removeSuffix("/")
         _uiState.update { it.copy(apiUrl = trimmedUrl, isSavingSettings = true, saveError = null) }
         LocalSettingsStorage.setApiUrl(trimmedUrl)
+        apiService.apiClient.baseUrl = trimmedUrl
 
         viewModelScope.launch {
             try {
-                settingsRepository.updateSettings(
-                    AppSettingsUpdate(
-                        cameraResolution = _uiState.value.cameraResolution,
-                        cameraFps = _uiState.value.cameraFps
+                if (authRepository.getToken() != null) {
+                    settingsRepository.updateSettings(
+                        AppSettingsUpdate(
+                            cameraResolution = _uiState.value.cameraResolution,
+                            cameraFps = _uiState.value.cameraFps
+                        )
                     )
-                )
+                }
                 _uiState.update { it.copy(isSavingSettings = false) }
                 checkServerConnection()
             } catch (e: Exception) {
@@ -88,8 +91,7 @@ class SettingsViewModel(
 
     fun checkServerConnection() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isCheckingServer = true) }
-            val currentUrl = _uiState.value.apiUrl.trim()
+            _uiState.update { it.copy(isCheckingServer = true, serverStatus = "Проверяется...") }
             try {
                 val wasConnected = apiService.healthCheck()
                 _uiState.update {
