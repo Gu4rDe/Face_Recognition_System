@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import io.ktor.client.plugins.HttpTimeout
 
-class ApiClient(initialBaseUrl: String = "http://localhost:8000") {
+class ApiClient(initialBaseUrl: String = "http://194.67.120.18:8000") {
 
     var baseUrl: String = initialBaseUrl
         set(value) {

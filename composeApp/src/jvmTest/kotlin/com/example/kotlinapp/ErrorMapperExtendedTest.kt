@@ -41,10 +41,10 @@ class ErrorMapperExtendedTest : FunSpec({
             result shouldContain "уже существует"
         }
 
-        test("503 returns server error message") {
+        test("503 returns face service unavailable message") {
             val exception = ApiException(503, "Service unavailable")
             val result = mapException(exception)
-            result shouldContain "сервера"
+            result shouldContain "недоступен"
         }
     }
 
