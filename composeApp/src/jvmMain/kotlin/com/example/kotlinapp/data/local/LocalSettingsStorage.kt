@@ -20,7 +20,7 @@ object LocalSettingsStorage {
     fun setTheme(theme: String) = prefs.put(KEY_THEME, theme)
 
     /** Возвращает URL API-сервера, по умолчанию http://localhost:8000. */
-    fun getApiUrl(): String = prefs.get(KEY_API_URL, "http://194.67.120.18:8000")
+    fun getApiUrl(): String = prefs.get(KEY_API_URL, "http://localhost:8000")
 
     /** Сохраняет URL API-сервера. */
     fun setApiUrl(url: String) = prefs.put(KEY_API_URL, url)
