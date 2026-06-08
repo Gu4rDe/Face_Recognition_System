@@ -12,4 +12,5 @@ interface EmployeeRepository {
     suspend fun getEmployeeStats(): EmployeeStats
     suspend fun updateEmployee(id: Long, update: EmployeeUpdate): Employee
     suspend fun deleteEmployee(id: Long)
+    suspend fun reEmbed(employeeId: String, photos: List<ByteArray>): Employee
 }

@@ -80,25 +80,6 @@ class EmployeeViewModelTest : FunSpec({
         }
     }
 
-    test("onSkipStep advances step only for optional steps") {
-        runTest {
-            val employeeRepository = mockk<EmployeeRepository>()
-            coEvery { employeeRepository.listEmployees(any(), any()) } returns emptyList()
-
-            val viewModel = EmployeeViewModel(employeeRepository)
-            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
-            viewModel.onSkipStep()
-            viewModel.photoState.value.currentStep shouldBe 0
-
-            viewModel.onPhotoCapture(byteArrayOf(1))
-            viewModel.onPhotoCapture(byteArrayOf(2))
-            viewModel.onPhotoCapture(byteArrayOf(3))
-
-            viewModel.onSkipStep()
-            viewModel.photoState.value.currentStep shouldBe 4
-        }
-    }
-
     test("canUpload is false with less than 3 photos") {
         runTest {
             val employeeRepository = mockk<EmployeeRepository>()
@@ -113,7 +94,7 @@ class EmployeeViewModelTest : FunSpec({
         }
     }
 
-    test("canUpload is true with 3 or more photos") {
+    test("canUpload is true with exactly 3 photos") {
         runTest {
             val employeeRepository = mockk<EmployeeRepository>()
             coEvery { employeeRepository.listEmployees(any(), any()) } returns emptyList()
@@ -125,6 +106,21 @@ class EmployeeViewModelTest : FunSpec({
             viewModel.onPhotoCapture(byteArrayOf(3))
 
             viewModel.photoState.value.canUpload shouldBe true
+        }
+    }
+
+    test("reEmbedPhotos calls repository and reloads") {
+        runTest {
+            val employeeRepository = mockk<EmployeeRepository>()
+            coEvery { employeeRepository.listEmployees(any(), any()) } returns emptyList()
+            coEvery { employeeRepository.reEmbed(any(), any()) } returns testEmployee()
+
+            val viewModel = EmployeeViewModel(employeeRepository)
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+            viewModel.reEmbedPhotos("EMP-1", listOf(byteArrayOf(1), byteArrayOf(2), byteArrayOf(3))) {}
+
+            mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+            coVerify { employeeRepository.reEmbed("EMP-1", any()) }
         }
     }
 })

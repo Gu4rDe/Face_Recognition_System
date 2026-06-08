@@ -74,16 +74,6 @@ class EmployeeViewModel(
         }
     }
 
-    fun onSkipStep() {
-        val currentStep = _photoState.value.currentStep
-        if (currentStep < 3) return
-        _photoState.update {
-            it.copy(
-                currentStep = minOf(currentStep + 1, it.totalSteps - 1)
-            )
-        }
-    }
-
     fun resetPhotoState() {
         _photoState.value = PhotoRegistrationUiState()
     }
@@ -91,8 +81,8 @@ class EmployeeViewModel(
     fun uploadPhotos(create: com.example.kotlinapp.domain.model.EmployeeCreate, onSuccess: () -> Unit) {
         viewModelScope.launch {
             val photos = _photoState.value.capturedPhotos.values.filterNotNull()
-            if (photos.size < 3) {
-                _photoState.update { it.copy(errorMessage = "Требуется минимум 3 фото") }
+            if (photos.size != 3) {
+                _photoState.update { it.copy(errorMessage = "Требуется ровно 3 фото") }
                 return@launch
             }
             _photoState.update { it.copy(isUploading = true, errorMessage = null) }
@@ -103,6 +93,18 @@ class EmployeeViewModel(
                 loadEmployees()
             } catch (e: Exception) {
                 _photoState.update { it.copy(isUploading = false, errorMessage = mapException(e)) }
+            }
+        }
+    }
+
+    fun reEmbedPhotos(employeeId: String, photos: List<ByteArray>, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                employeeRepository.reEmbed(employeeId, photos)
+                loadEmployees()
+                onSuccess()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = mapException(e)) }
             }
         }
     }

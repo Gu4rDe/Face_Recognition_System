@@ -186,6 +186,22 @@ class ApiService(val apiClient: ApiClient) {
         }
     }
 
+    suspend fun reEmbedFace(employeeId: String, photos: List<ByteArray>): EmployeeResponseDto {
+        return safeCall {
+            client.post("/api/v1/employees/$employeeId/re-embed") {
+                addAuthToken(apiClient.token)
+                setBody(MultiPartFormDataContent(formData {
+                    photos.forEachIndexed { index, bytes ->
+                        append("files", bytes, Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=photo_${index}.jpg")
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                        })
+                    }
+                }))
+            }.body()
+        }
+    }
+
     // Face Recognition
     suspend fun recognizeFace(imageBytes: ByteArray): FaceRecognitionResponseDto {
         return safeCall {

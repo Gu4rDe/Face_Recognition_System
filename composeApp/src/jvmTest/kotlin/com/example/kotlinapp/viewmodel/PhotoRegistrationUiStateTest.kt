@@ -31,25 +31,18 @@ class PhotoRegistrationUiStateTest : FunSpec({
         state.canUpload shouldBe true
     }
 
-    test("canUpload is true with 5 photos") {
+    test("canUpload is false with 4 photos") {
         val state = PhotoRegistrationUiState(
             capturedPhotos = mapOf(
-                0 to byteArrayOf(1), 1 to byteArrayOf(2), 2 to byteArrayOf(3),
-                3 to byteArrayOf(4), 4 to byteArrayOf(5)
+                0 to byteArrayOf(1), 1 to byteArrayOf(2), 2 to byteArrayOf(3), 3 to byteArrayOf(4)
             )
         )
-        state.canUpload shouldBe true
+        state.canUpload shouldBe false
     }
 
-    test("isOptionalStep is false for steps 0, 1, 2") {
-        PhotoRegistrationUiState(currentStep = 0).isOptionalStep shouldBe false
-        PhotoRegistrationUiState(currentStep = 1).isOptionalStep shouldBe false
-        PhotoRegistrationUiState(currentStep = 2).isOptionalStep shouldBe false
-    }
-
-    test("isOptionalStep is true for steps 3, 4") {
-        PhotoRegistrationUiState(currentStep = 3).isOptionalStep shouldBe true
-        PhotoRegistrationUiState(currentStep = 4).isOptionalStep shouldBe true
+    test("totalSteps is 3") {
+        val state = PhotoRegistrationUiState()
+        state.totalSteps shouldBe 3
     }
 
     test("capturedCount returns correct count") {

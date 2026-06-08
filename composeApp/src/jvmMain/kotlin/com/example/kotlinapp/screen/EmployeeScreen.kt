@@ -55,6 +55,7 @@ fun EmployeeContent(
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Employee?>(null) }
+    var reEmbedTarget by remember { mutableStateOf<Employee?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.uiState.collect { uiState = it }
@@ -110,7 +111,8 @@ fun EmployeeContent(
                 items(uiState.employees) { employee ->
                     EmployeeCard(
                         employee = employee,
-                        onDelete = { deleteTarget = employee }
+                        onDelete = { deleteTarget = employee },
+                        onReEmbed = { reEmbedTarget = employee }
                     )
                 }
             }
@@ -138,10 +140,18 @@ fun EmployeeContent(
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Отмена") } }
         )
     }
+
+    reEmbedTarget?.let { employee ->
+        ReEmbedDialog(
+            employee = employee,
+            viewModel = viewModel,
+            onDismiss = { reEmbedTarget = null }
+        )
+    }
 }
 
 @Composable
-private fun EmployeeCard(employee: Employee, onDelete: () -> Unit) {
+private fun EmployeeCard(employee: Employee, onDelete: () -> Unit, onReEmbed: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(12.dp).fillMaxWidth(),
@@ -160,8 +170,13 @@ private fun EmployeeCard(employee: Employee, onDelete: () -> Unit) {
                     color = if (employee.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
             }
-            IconButton(onClick = onDelete) {
-                Text("✕", color = MaterialTheme.colorScheme.error)
+            Row {
+                IconButton(onClick = onReEmbed) {
+                    Text("🔄", style = MaterialTheme.typography.titleMedium)
+                }
+                IconButton(onClick = onDelete) {
+                    Text("✕", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
@@ -202,7 +217,7 @@ private fun AddEmployeeDialog(viewModel: EmployeeViewModel, onDismiss: () -> Uni
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Имя пользователя *") }, placeholder = { Text("Иванов Иван Иванович") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("ФИО сотрудника *") }, placeholder = { Text("Иванов Иван Иванович") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email *") }, placeholder = { Text("ivanov@company.com") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") }, placeholder = { Text("+7 999 123-45-67") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = department, onValueChange = { department = it }, label = { Text("Отдел") }, placeholder = { Text("Отдел разработки") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -210,7 +225,7 @@ private fun AddEmployeeDialog(viewModel: EmployeeViewModel, onDismiss: () -> Uni
 
                     HorizontalDivider()
 
-                    Text("Фотографии: ${photoState.capturedCount}/5 (минимум 3)", style = MaterialTheme.typography.titleSmall)
+                    Text("Фотографии: ${photoState.capturedCount}/3", style = MaterialTheme.typography.titleSmall)
 
                     ProgressIndicator(
                         currentStep = photoState.currentStep,
@@ -228,15 +243,6 @@ private fun AddEmployeeDialog(viewModel: EmployeeViewModel, onDismiss: () -> Uni
                             enabled = !photoState.isUploading
                         ) {
                             Text("Захватить")
-                        }
-                        if (photoState.isOptionalStep) {
-                            OutlinedButton(
-                                onClick = { viewModel.onSkipStep() },
-                                modifier = Modifier.weight(1f),
-                                enabled = !photoState.isUploading
-                            ) {
-                                Text("Пропустить")
-                            }
                         }
                     }
 
@@ -293,6 +299,74 @@ private fun ProgressIndicator(currentStep: Int, totalSteps: Int, capturedCount: 
             "Шаг ${currentStep + 1} из $totalSteps",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ReEmbedDialog(
+    employee: Employee,
+    viewModel: EmployeeViewModel,
+    onDismiss: () -> Unit
+) {
+    var photoState by remember { mutableStateOf(PhotoRegistrationUiState()) }
+    var showPhotoCapture by remember { mutableStateOf(false) }
+    val webcamService = remember { WebcamService() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.photoState.collect { photoState = it }
+    }
+
+    if (showPhotoCapture) {
+        PhotoCaptureDialog(webcamService = webcamService, onResult = { bytes ->
+            showPhotoCapture = false
+            if (bytes != null) {
+                viewModel.onPhotoCapture(bytes)
+            }
+        })
+    } else {
+        AlertDialog(
+            onDismissRequest = { onDismiss() },
+            title = { Text("Заменить фотографии лица") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Загрузите 3 новых фото сотрудника для замены: ${employee.username}")
+                    Text("Фотографии: ${photoState.capturedCount}/3", style = MaterialTheme.typography.titleSmall)
+
+                    ProgressIndicator(
+                        currentStep = photoState.currentStep,
+                        totalSteps = photoState.totalSteps,
+                        capturedCount = photoState.capturedCount
+                    )
+
+                    Button(
+                        onClick = { showPhotoCapture = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !photoState.isUploading
+                    ) {
+                        Text("Захватить")
+                    }
+
+                    photoState.errorMessage?.let { msg ->
+                        Text(msg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val photos = photoState.capturedPhotos.values.filterNotNull()
+                        viewModel.reEmbedPhotos(employee.employeeId, photos) { onDismiss() }
+                    },
+                    enabled = photoState.canUpload && !photoState.isUploading
+                ) {
+                    if (photoState.isUploading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    else Text("Заменить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.resetPhotoState(); onDismiss() }) { Text("Отмена") }
+            }
         )
     }
 }

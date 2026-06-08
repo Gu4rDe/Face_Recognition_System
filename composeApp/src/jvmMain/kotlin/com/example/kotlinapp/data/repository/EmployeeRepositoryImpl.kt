@@ -37,4 +37,8 @@ class EmployeeRepositoryImpl(
     override suspend fun deleteEmployee(id: Long) {
         apiService.deleteEmployee(id)
     }
+
+    override suspend fun reEmbed(employeeId: String, photos: List<ByteArray>): Employee {
+        return apiService.reEmbedFace(employeeId, photos).toDomain()
+    }
 }
