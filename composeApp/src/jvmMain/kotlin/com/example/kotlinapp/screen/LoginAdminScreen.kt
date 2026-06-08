@@ -151,14 +151,6 @@ fun LoginScreen(
             Text(text = "Забыли пароль?")
         }
 
-        Button(
-            onClick = { navController.popBackStack() },
-            enabled = !uiState.isLoading,
-            modifier = Modifier
-                .width(300.dp)
-                .padding(top = 8.dp)
-        ) {
-            Text(text = "Назад")
-        }
+        
     }
 }

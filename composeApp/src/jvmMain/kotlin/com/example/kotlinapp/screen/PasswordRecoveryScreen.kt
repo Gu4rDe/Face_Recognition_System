@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.kotlinapp.navigation.AppScreen
 import com.example.kotlinapp.ui.buttons.LoginButton
 import com.example.kotlinapp.ui.textfields.LoginTextField
 import com.example.kotlinapp.ui.textfields.PasswordTextField
@@ -188,7 +189,7 @@ fun PasswordRecoveryScreen(
         )
 
         TextButton(
-            onClick = { navController.popBackStack() },
+            onClick = { navController.navigate(AppScreen.Login) { popUpTo(0) { inclusive = true } } },
             enabled = !uiState.isLoading
         ) {
             Text(text = "Назад")
